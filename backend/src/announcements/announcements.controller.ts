@@ -13,7 +13,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bullmq';
+import type { Queue } from 'bull';
 import * as XLSX from 'xlsx';
 
 interface ExcelRow {
@@ -89,23 +89,22 @@ export class AnnouncementsController {
         }
 
         // Her alıcı için kuyruğa ekle
-        const jobs = body.recipients.map((r) => ({
-            name: 'bulk-announcement',
-            data: {
+        const jobPromises = body.recipients.map((r) =>
+            this.whatsappQueue.add('bulk-announcement', {
                 phone: r.phone,
                 name: r.name,
                 templateName: body.template_name,
                 parameters: body.parameters || [],
-            },
-        }));
+            }),
+        );
 
-        await this.whatsappQueue.addBulk(jobs);
+        await Promise.all(jobPromises);
 
-        this.logger.log(`${jobs.length} duyuru mesajı kuyruğa eklendi`);
+        this.logger.log(`${body.recipients.length} duyuru mesajı kuyruğa eklendi`);
 
         return {
-            message: `${jobs.length} mesaj kuyruğa eklendi`,
-            queued_count: jobs.length,
+            message: `${body.recipients.length} mesaj kuyruğa eklendi`,
+            queued_count: body.recipients.length,
         };
     }
 
