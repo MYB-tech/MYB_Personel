@@ -20,7 +20,9 @@ interface ExcelRow {
     Ad: string;
     Soyad: string;
     Tel: string;
-    Apartman: string;
+    Bina: string;
+    'Daire No': string;
+    Bakiye: string | number;
 }
 
 @Controller('announcements')
@@ -51,8 +53,11 @@ export class AnnouncementsController {
             const errors: string[] = [];
             if (!row.Ad) errors.push('Ad eksik');
             if (!row.Tel) errors.push('Telefon numarası eksik');
-            if (row.Tel && !/^\d{10,15}$/.test(row.Tel.replace(/\D/g, ''))) {
+            if (row.Tel && !/^\d{10,15}$/.test(row.Tel.toString().replace(/\D/g, ''))) {
                 errors.push('Geçersiz telefon formatı');
+            }
+            if (row.Bakiye === undefined || row.Bakiye === null) {
+                errors.push('Bakiye eksik');
             }
 
             if (errors.length > 0) {
@@ -79,9 +84,8 @@ export class AnnouncementsController {
     async sendBulk(
         @Body()
         body: {
-            recipients: { phone: string; name: string }[];
-            template_name: string;
-            parameters?: { type: string; text: string }[];
+            recipients: ExcelRow[];
+            messageTemplate: string;
         },
     ) {
         if (!body.recipients || body.recipients.length === 0) {
@@ -89,12 +93,11 @@ export class AnnouncementsController {
         }
 
         // Her alıcı için kuyruğa ekle
-        const jobPromises = body.recipients.map((r) =>
+        const jobPromises = body.recipients.map((row) =>
             this.whatsappQueue.add('bulk-announcement', {
-                phone: r.phone,
-                name: r.name,
-                templateName: body.template_name,
-                parameters: body.parameters || [],
+                phone: row.Tel,
+                recipientData: row,
+                messageTemplate: body.messageTemplate,
             }),
         );
 

@@ -79,4 +79,37 @@ export class MetaApiClient {
             throw error;
         }
     }
+
+    /**
+     * Serbest metin mesajı gönderir.
+     * Not: Bu mesajın iletilebilmesi için alıcının son 24 saat içinde işletmeye mesaj atmış olması gerekebilir.
+     * Duyurular için genellikle şablon mesajlar tercih edilir.
+     */
+    async sendTextMessage(to: string, text: string) {
+        try {
+            const body = {
+                messaging_product: 'whatsapp',
+                recipient_type: 'individual',
+                to,
+                type: 'text',
+                text: {
+                    preview_url: false,
+                    body: text,
+                },
+            };
+
+            const response = await this.client.post(
+                `/${this.phoneNumberId}/messages`,
+                body,
+            );
+
+            this.logger.log(`WhatsApp metin mesajı gönderildi: ${to}`);
+            return response.data;
+        } catch (error: any) {
+            this.logger.error(
+                `WhatsApp metin mesajı gönderilemedi: ${error?.response?.data?.error?.message || error.message}`,
+            );
+            throw error;
+        }
+    }
 }
