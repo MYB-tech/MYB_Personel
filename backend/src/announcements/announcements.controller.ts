@@ -51,6 +51,9 @@ export class AnnouncementsController {
             if (row.Tel && !/^\d{10,15}$/.test(row.Tel.toString().replace(/\D/g, ''))) {
                 errors.push('Geçersiz telefon formatı');
             }
+            if (row.Bakiye === undefined || row.Bakiye === null) {
+                errors.push('Bakiye eksik');
+            }
 
             if (errors.length > 0) {
                 invalid.push({ row: index + 2, data: row, error: errors.join(', ') });
@@ -73,21 +76,20 @@ export class AnnouncementsController {
     async sendBulk(
         @Body()
         body: {
-            recipients: { phone: string; name: string; parameters?: { type: string; text: string }[] }[];
-            template_name: string;
-            global_parameters?: { type: string; text: string }[];
+            recipients: ExcelRow[];
+            messageTemplate: string;
         },
     ) {
         if (!body.recipients || body.recipients.length === 0) {
             throw new BadRequestException('Alıcı listesi boş');
         }
 
-        const jobPromises = body.recipients.map((r) =>
+        // Her alıcı için kuyruğa ekle
+        const jobPromises = body.recipients.map((row) =>
             this.whatsappQueue.add('bulk-announcement', {
-                phone: r.phone,
-                name: r.name,
-                templateName: body.template_name,
-                parameters: [...(body.global_parameters || []), ...(r.parameters || [])],
+                phone: row.Tel,
+                recipientData: row,
+                messageTemplate: body.messageTemplate,
             }),
         );
 

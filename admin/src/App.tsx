@@ -23,11 +23,11 @@ function App() {
             </RequireAuth>
           }>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/staff" element={<StaffPage />} />
-            <Route path="/apartments" element={<ApartmentsPage />} />
-            <Route path="/tasks" element={<TasksPage />} />
-            <Route path="/map" element={<MapPage />} />
-            <Route path="/announcements" element={<AnnouncementsPage />} />
+            <Route path="/staff" element={<Staff />} />
+            <Route path="/apartments" element={<Apartments />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/map" element={<LiveMap />} />
+            <Route path="/announcements" element={<Announcements />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
