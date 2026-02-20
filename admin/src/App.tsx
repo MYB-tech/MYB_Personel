@@ -4,11 +4,11 @@ import { RequireAuth } from './components/RequireAuth';
 import Login from './pages/Login';
 import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
-import StaffPage from './pages/StaffPage';
-import ApartmentsPage from './pages/ApartmentsPage';
-import TasksPage from './pages/TasksPage';
-import MapPage from './pages/MapPage';
-import AnnouncementsPage from './pages/AnnouncementsPage';
+import StaffPage from './pages/Staff';
+import ApartmentsPage from './pages/Apartments';
+import TasksPage from './pages/Tasks';
+import LiveMapPage from './pages/LiveMap';
+import AnnouncementsPage from './pages/Announcements';
 
 function App() {
   return (
@@ -23,11 +23,11 @@ function App() {
             </RequireAuth>
           }>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/staff" element={<Staff />} />
-            <Route path="/apartments" element={<Apartments />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/map" element={<LiveMap />} />
-            <Route path="/announcements" element={<Announcements />} />
+            <Route path="/staff" element={<StaffPage />} />
+            <Route path="/apartments" element={<ApartmentsPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/map" element={<LiveMapPage />} />
+            <Route path="/announcements" element={<AnnouncementsPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
