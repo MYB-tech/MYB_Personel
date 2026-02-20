@@ -20,10 +20,10 @@ export const announcementsService = {
         return response.data;
     },
 
-    sendBulk: async (recipients: { phone: string; name: string }[], template_name: string) => {
+    sendBulk: async (recipients: any[], messageTemplate: string) => {
         const response = await api.post('/announcements/send', {
             recipients,
-            template_name,
+            messageTemplate,
         });
         return response.data;
     },

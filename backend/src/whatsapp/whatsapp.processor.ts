@@ -63,15 +63,28 @@ export class WhatsappProcessor {
 
     @Process('bulk-announcement')
     async handleBulkAnnouncement(job: Job) {
-        const { phone, templateName, parameters } = job.data;
+        const { phone, recipientData, messageTemplate } = job.data;
 
         try {
-            await this.metaApi.sendTemplateMessage(
-                phone,
-                templateName,
-                'tr',
-                parameters,
-            );
+            // Placeholder replacement
+            let personalizedMessage = messageTemplate;
+            const replacements = {
+                '<ad>': recipientData.Ad || '',
+                '<soyad>': recipientData.Soyad || '',
+                '<bina>': recipientData.Bina || '',
+                '<daire_no>': recipientData['Daire No'] || '',
+                '<tel>': recipientData.Tel || '',
+                '<bakiye>': recipientData.Bakiye?.toString() || '0',
+            };
+
+            for (const [placeholder, value] of Object.entries(replacements)) {
+                personalizedMessage = personalizedMessage.replace(
+                    new RegExp(placeholder, 'gi'),
+                    value,
+                );
+            }
+
+            await this.metaApi.sendTextMessage(phone, personalizedMessage);
             this.logger.log(`Duyuru mesajı gönderildi: ${phone}`);
         } catch (error) {
             this.logger.error(`Duyuru mesajı gönderilemedi: ${phone}`);

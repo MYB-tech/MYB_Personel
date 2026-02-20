@@ -4,11 +4,11 @@ import { RequireAuth } from './components/RequireAuth';
 import Login from './pages/Login';
 import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
-import StaffPage from './pages/StaffPage';
-import ApartmentsPage from './pages/ApartmentsPage';
-import TasksPage from './pages/TasksPage';
-import MapPage from './pages/MapPage';
-import AnnouncementsPage from './pages/AnnouncementsPage';
+import StaffPage from './pages/Staff';
+import ApartmentsPage from './pages/Apartments';
+import TasksPage from './pages/Tasks';
+import LiveMapPage from './pages/LiveMap';
+import AnnouncementsPage from './pages/Announcements';
 
 function App() {
   return (
@@ -26,7 +26,7 @@ function App() {
             <Route path="/staff" element={<StaffPage />} />
             <Route path="/apartments" element={<ApartmentsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
-            <Route path="/map" element={<MapPage />} />
+            <Route path="/map" element={<LiveMapPage />} />
             <Route path="/announcements" element={<AnnouncementsPage />} />
           </Route>
 

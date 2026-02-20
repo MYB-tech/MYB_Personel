@@ -8,7 +8,9 @@ interface ExcelRow {
     Ad: string;
     Soyad: string;
     Tel: string;
-    Apartman: string;
+    Bina: string;
+    'Daire No': string;
+    Bakiye: string | number;
 }
 
 export default function AnnouncementsPage() {
@@ -17,6 +19,7 @@ export default function AnnouncementsPage() {
     const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    const [messageTemplate, setMessageTemplate] = useState('');
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -42,23 +45,19 @@ export default function AnnouncementsPage() {
 
     const handleSend = async () => {
         if (!preview || preview.valid.length === 0) return;
+        if (!messageTemplate.trim()) {
+            alert('Lütfen bir mesaj içeriği oluşturun.');
+            return;
+        }
         if (!window.confirm(`${preview.valid.length} kişiye mesaj gönderilsin mi?`)) return;
 
         setSending(true);
         try {
-            const recipients = preview.valid.map((row: ExcelRow) => ({
-                // Excel headers: Ad, Soyad, Tel
-                name: `${row.Ad} ${row.Soyad}`,
-                phone: row.Tel,
-            }));
-
-            // Default template for now (or let user select)
-            const templateName = 'hello_world'; // Replace with actual template
-
-            await announcementsService.sendBulk(recipients, templateName);
+            await announcementsService.sendBulk(preview.valid, messageTemplate);
             setSuccessMessage(`${preview.valid.length} mesaj başarıyla kuyruğa eklendi.`);
             setFile(null);
             setPreview(null);
+            setMessageTemplate('');
         } catch (error) {
             console.error('Error sending messages:', error);
             alert('Mesaj gönderilirken hata oluştu.');
@@ -82,7 +81,7 @@ export default function AnnouncementsPage() {
                     <div className="space-y-2">
                         <h3 className="text-lg font-semibold">Excel Dosyası Yükle</h3>
                         <p className="text-sm text-muted-foreground">
-                            Sütunlar: <code>Ad, Soyad, Tel, Apartman</code>
+                            Sütunlar: <code>Ad, Soyad, Bina, Daire No, Tel, Bakiye</code>
                         </p>
                     </div>
 
@@ -122,6 +121,39 @@ export default function AnnouncementsPage() {
             )}
 
             {preview && (
+                <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+                    <h3 className="text-lg font-semibold">Mesaj İçeriği</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Aşağıdaki butonları kullanarak dinamik alanlar ekleyebilirsiniz.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {[
+                            { label: 'Ad', value: '<ad>' },
+                            { label: 'Soyad', value: '<soyad>' },
+                            { label: 'Bina', value: '<bina>' },
+                            { label: 'Daire No', value: '<daire_no>' },
+                            { label: 'Telefon', value: '<tel>' },
+                            { label: 'Bakiye', value: '<bakiye>' },
+                        ].map((tag) => (
+                            <button
+                                key={tag.value}
+                                onClick={() => setMessageTemplate(prev => prev + tag.value)}
+                                className="px-3 py-1 bg-primary/10 text-primary rounded-md text-sm hover:bg-primary/20 transition-colors"
+                            >
+                                {tag.label} ({tag.value})
+                            </button>
+                        ))}
+                    </div>
+                    <textarea
+                        className="w-full min-h-[150px] p-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        placeholder="Mesajınızı buraya yazın..."
+                        value={messageTemplate}
+                        onChange={(e) => setMessageTemplate(e.target.value)}
+                    />
+                </div>
+            )}
+
+            {preview && (
                 <div className="grid gap-6 md:grid-cols-2">
                     {/* Valid Rows */}
                     <div className="border border-border rounded-md bg-card overflow-hidden">
@@ -136,16 +168,18 @@ export default function AnnouncementsPage() {
                                 <thead className="bg-muted/50 sticky top-0">
                                     <tr>
                                         <th className="p-3 text-left">Ad Soyad</th>
+                                        <th className="p-3 text-left">Bina / Daire</th>
                                         <th className="p-3 text-left">Telefon</th>
-                                        <th className="p-3 text-left">Apartman</th>
+                                        <th className="p-3 text-left">Bakiye</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {preview.valid.map((row: ExcelRow, i) => (
                                         <tr key={i} className="border-b border-border last:border-0">
                                             <td className="p-3 font-medium">{row.Ad} {row.Soyad}</td>
+                                            <td className="p-3">{row.Bina} / {row['Daire No']}</td>
                                             <td className="p-3">{row.Tel}</td>
-                                            <td className="p-3">{row.Apartman}</td>
+                                            <td className="p-3">{row.Bakiye} TL</td>
                                         </tr>
                                     ))}
                                     {preview.valid.length === 0 && (
