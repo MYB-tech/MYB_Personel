@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from '@react-google-maps/api';
 import { apartmentsService } from '../services/apartmentsService';
 import type { Apartment } from '../services/apartmentsService';
 import { tasksService } from '../services/tasksService';
@@ -10,30 +9,34 @@ import { RefreshCw } from 'lucide-react';
 
 const REFRESH_INTERVAL_MS = 30000; // 30 seconds
 
-// Custom Icons
-const aptIcon = L.icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/markers/marker-icon-2x-blue.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-});
+const mapContainerStyle = {
+    height: '100%',
+    width: '100%'
+};
 
-const taskIcon = L.icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/markers/marker-icon-2x-green.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-});
+const center = {
+    lat: 41.0082,
+    lng: 28.9784
+};
+
+// Google Maps Marker Icons
+const aptIcon = 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/markers/marker-icon-blue.png';
+const taskIcon = 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/markers/marker-icon-green.png';
 
 export default function LiveMapPage() {
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""
+    });
+
     const [apartments, setApartments] = useState<Apartment[]>([]);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+    const [selectedApt, setSelectedApt] = useState<Apartment | null>(null);
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+    const mapRef = useRef<google.maps.Map | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -58,6 +61,16 @@ export default function LiveMapPage() {
         return () => clearInterval(interval);
     }, []);
 
+    const onLoad = useCallback((map: google.maps.Map) => {
+        mapRef.current = map;
+    }, []);
+
+    const onUnmount = useCallback(() => {
+        mapRef.current = null;
+    }, []);
+
+    if (!isLoaded) return <div>Yükleniyor...</div>;
+
     return (
         <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
             <div className="flex items-center justify-between">
@@ -74,27 +87,28 @@ export default function LiveMapPage() {
             </div>
 
             <div className="flex-1 rounded-md border border-border overflow-hidden relative">
-                <MapContainer center={[41.0082, 28.9784]} zoom={12} style={{ height: '100%', width: '100%' }}>
-                    <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-
+                <GoogleMap
+                    mapContainerStyle={mapContainerStyle}
+                    center={center}
+                    zoom={12}
+                    onLoad={onLoad}
+                    onUnmount={onUnmount}
+                    options={{
+                        streetViewControl: false,
+                        mapTypeControl: false,
+                    }}
+                >
                     {/* Apartment Markers */}
                     {apartments.map(apt => (
                         <Marker
                             key={`apt-${apt.id}`}
-                            position={[apt.location.coordinates[1], apt.location.coordinates[0]]}
+                            position={{ lat: apt.location.coordinates[1], lng: apt.location.coordinates[0] }}
                             icon={aptIcon}
-                        >
-                            <Popup>
-                                <div className="p-1">
-                                    <h3 className="font-bold">{apt.name}</h3>
-                                    <p className="text-sm">{apt.address}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{apt.residents?.length || 0} Sakin</p>
-                                </div>
-                            </Popup>
-                        </Marker>
+                            onClick={() => {
+                                setSelectedApt(apt);
+                                setSelectedTask(null);
+                            }}
+                        />
                     ))}
 
                     {/* Task Markers */}
@@ -107,33 +121,58 @@ export default function LiveMapPage() {
                         return (
                             <Marker
                                 key={`task-${task.id}`}
-                                position={[lat, lng]}
+                                position={{ lat, lng }}
                                 icon={taskIcon}
-                            >
-                                <Popup>
-                                    <div className="p-1">
-                                        <h3 className="font-bold text-green-600">Görev: {task.type}</h3>
-                                        <p className="text-sm">Personel: {task.staff?.name}</p>
-                                        <p className="text-sm">Durum: {task.status}</p>
-                                        <div className="flex items-center gap-1 mt-1 font-mono text-xs">
-                                            <span>{task.schedule_start} - {task.schedule_end}</span>
-                                        </div>
-                                    </div>
-                                </Popup>
-                            </Marker>
+                                onClick={() => {
+                                    setSelectedTask(task);
+                                    setSelectedApt(null);
+                                }}
+                            />
                         );
                     })}
 
-                </MapContainer>
+                    {selectedApt && (
+                        <InfoWindow
+                            position={{ lat: selectedApt.location.coordinates[1], lng: selectedApt.location.coordinates[0] }}
+                            onCloseClick={() => setSelectedApt(null)}
+                        >
+                            <div className="p-1">
+                                <h3 className="font-bold">{selectedApt.name}</h3>
+                                <p className="text-sm">{selectedApt.address}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{selectedApt.residents?.length || 0} Sakin</p>
+                            </div>
+                        </InfoWindow>
+                    )}
+
+                    {selectedTask && selectedTask.apartment && (
+                        <InfoWindow
+                            position={{
+                                lat: selectedTask.apartment.location.coordinates[1] + 0.0001,
+                                lng: selectedTask.apartment.location.coordinates[0] + 0.0001
+                            }}
+                            onCloseClick={() => setSelectedTask(null)}
+                        >
+                            <div className="p-1">
+                                <h3 className="font-bold text-green-600">Görev: {selectedTask.type}</h3>
+                                <p className="text-sm">Personel: {selectedTask.staff?.name}</p>
+                                <p className="text-sm">Durum: {selectedTask.status}</p>
+                                <div className="flex items-center gap-1 mt-1 font-mono text-xs">
+                                    <span>{selectedTask.schedule_start} - {selectedTask.schedule_end}</span>
+                                </div>
+                            </div>
+                        </InfoWindow>
+                    )}
+
+                </GoogleMap>
 
                 {/* Legend Overlay */}
                 <div className="absolute bottom-4 left-4 bg-card/90 border border-border p-3 rounded-md shadow-lg z-[1000] text-sm">
                     <div className="flex items-center gap-2 mb-1">
-                        <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/markers/marker-icon-2x-blue.png" className="h-4" alt="blue" />
+                        <img src={aptIcon} className="h-4" alt="blue" />
                         <span>Apartmanlar</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/markers/marker-icon-2x-green.png" className="h-4" alt="green" />
+                        <img src={taskIcon} className="h-4" alt="green" />
                         <span>Aktif Görevler</span>
                     </div>
                 </div>

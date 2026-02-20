@@ -1,52 +1,129 @@
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
+import { useState, useCallback, useRef } from 'react';
+import { GoogleMap, Marker, Autocomplete, useJsApiLoader } from '@react-google-maps/api';
+import { Input } from './input';
 
-// Fix for default marker icon
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
+const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["places"];
 
 interface LocationPickerProps {
     latitude: number;
     longitude: number;
+    address: string;
     onLocationSelect: (lat: number, lng: number) => void;
+    onAddressSelect: (address: string) => void;
 }
 
-function LocationMarker({ position, onLocationSelect }: { position: [number, number], onLocationSelect: (lat: number, lng: number) => void }) {
-    useMapEvents({
-        click(e) {
-            onLocationSelect(e.latlng.lat, e.latlng.lng);
-        },
+const mapContainerStyle = {
+    height: '100%',
+    width: '100%'
+};
+
+export function LocationPicker({ latitude, longitude, address, onLocationSelect, onAddressSelect }: LocationPickerProps) {
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
+        libraries
     });
 
-    return position ? <Marker position={position} /> : null;
-}
+    const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+    const mapRef = useRef<google.maps.Map | null>(null);
 
-export function LocationPicker({ latitude, longitude, onLocationSelect }: LocationPickerProps) {
-    // Default center (Istanbul) if no location selected or 0,0
-    const center: [number, number] = (latitude && longitude) ? [latitude, longitude] : [41.0082, 28.9784];
+    const center = {
+        lat: latitude || 41.0082,
+        lng: longitude || 28.9784
+    };
+
+    const onLoad = useCallback((map: google.maps.Map) => {
+        mapRef.current = map;
+    }, []);
+
+    const onUnmount = useCallback(() => {
+        mapRef.current = null;
+    }, []);
+
+    const onAutocompleteLoad = (autocompleteInstance: google.maps.places.Autocomplete) => {
+        setAutocomplete(autocompleteInstance);
+    };
+
+    const onPlaceChanged = () => {
+        if (autocomplete !== null) {
+            const place = autocomplete.getPlace();
+            if (place.geometry && place.geometry.location) {
+                const lat = place.geometry.location.lat();
+                const lng = place.geometry.location.lng();
+                onLocationSelect(lat, lng);
+                onAddressSelect(place.formatted_address || "");
+                mapRef.current?.panTo({ lat, lng });
+            }
+        }
+    };
+
+    const reverseGeocode = (lat: number, lng: number) => {
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+            if (status === "OK" && results && results[0]) {
+                onAddressSelect(results[0].formatted_address);
+            }
+        });
+    };
+
+    const onMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
+        if (e.latLng) {
+            const lat = e.latLng.lat();
+            const lng = e.latLng.lng();
+            onLocationSelect(lat, lng);
+            reverseGeocode(lat, lng);
+        }
+    };
+
+    const onMapClick = (e: google.maps.MapMouseEvent) => {
+        if (e.latLng) {
+            const lat = e.latLng.lat();
+            const lng = e.latLng.lng();
+            onLocationSelect(lat, lng);
+            reverseGeocode(lat, lng);
+        }
+    };
+
+    if (!isLoaded) return <div>Yükleniyor...</div>;
 
     return (
-        <div className="h-[300px] w-full rounded-md overflow-hidden border border-input">
-            <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
-                <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <LocationMarker
-                    position={[latitude || 41.0082, longitude || 28.9784]}
-                    onLocationSelect={onLocationSelect}
-                />
-            </MapContainer>
-            <p className="text-xs text-muted-foreground mt-1">Haritadan konum seçmek için tıklayın.</p>
+        <div className="space-y-4">
+            <div className="space-y-2">
+                <label className="text-sm font-medium">Adres Ara</label>
+                <Autocomplete
+                    onLoad={onAutocompleteLoad}
+                    onPlaceChanged={onPlaceChanged}
+                >
+                    <Input
+                        type="text"
+                        placeholder="Adres yazın..."
+                        value={address}
+                        onChange={(e) => onAddressSelect(e.target.value)}
+                    />
+                </Autocomplete>
+            </div>
+
+            <div className="h-[300px] w-full rounded-md overflow-hidden border border-input">
+                <GoogleMap
+                    mapContainerStyle={mapContainerStyle}
+                    center={center}
+                    zoom={13}
+                    onLoad={onLoad}
+                    onUnmount={onUnmount}
+                    onClick={onMapClick}
+                    options={{
+                        streetViewControl: false,
+                        mapTypeControl: false,
+                    }}
+                >
+                    <Marker
+                        position={center}
+                        draggable={true}
+                        onDragEnd={onMarkerDragEnd}
+                    />
+                </GoogleMap>
+            </div>
+            <p className="text-xs text-muted-foreground">Haritadan konum seçmek için tıklayın veya iğneyi sürükleyin.</p>
         </div>
     );
 }

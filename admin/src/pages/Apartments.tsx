@@ -184,45 +184,16 @@ export default function ApartmentsPage() {
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Adres</label>
-                                <textarea
-                                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                    value={formData.address}
-                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Enlem (Lat)</label>
-                                    <Input
-                                        type="number"
-                                        step="any"
-                                        value={formData.latitude}
-                                        onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) })}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Boylam (Lng)</label>
-                                    <Input
-                                        type="number"
-                                        step="any"
-                                        value={formData.longitude}
-                                        onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) })}
-                                        required
-                                    />
-                                </div>
-                            </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Konum Seçimi</label>
+                            <label className="text-sm font-medium">Adres ve Konum Seçimi</label>
                             <LocationPicker
                                 latitude={formData.latitude}
                                 longitude={formData.longitude}
+                                address={formData.address || ''}
                                 onLocationSelect={(lat, lng) => setFormData({ ...formData, latitude: lat, longitude: lng })}
+                                onAddressSelect={(addr) => setFormData({ ...formData, address: addr })}
                             />
                         </div>
                     </div>
