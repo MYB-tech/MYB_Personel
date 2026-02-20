@@ -7,10 +7,10 @@ async function bootstrap() {
     const staffService = app.get(StaffService);
 
     const staffDto: any = {
-        name: 'Ahmet Yılmaz',
-        phone: '5551112233',
-        password: 'password123',
-        role: 'field',
+        name: 'Mete Yazıcı',
+        phone: '5337144046',
+        password: 'Mete123',
+        role: 'admin',
         isActive: true,
     };
 

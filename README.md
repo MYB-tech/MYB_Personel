@@ -29,6 +29,32 @@ cd backend && npm install && npm run start:dev
 cd admin && npm install && npm run dev
 ```
 
+## Veritabanı Kurulumu (PostgreSQL + PostGIS)
+
+Bu proje konum tabanlı doğrulama (Geofencing) için **PostGIS** eklentisine ihtiyaç duyar.
+
+### Seçenek 1: Docker (Önerilen)
+Eğer Docker yüklüyse, hiçbir kurulum yapmanıza gerek yoktur. `docker-compose.yml` dosyası PostGIS destekli PostgreSQL 16 imajını otomatik olarak yapılandırır.
+```bash
+docker compose up -d
+```
+
+### Seçenek 2: Manuel Kurulum
+Eğer PostgreSQL'i yerel olarak kurmak isterseniz aşağıdaki adımları takip edin:
+
+1. **PostgreSQL 16** sürümünü yükleyin.
+2. İşletim sisteminize uygun **PostGIS** eklentisini (v3.4+) yükleyin.
+3. Veritabanınızı oluşturun:
+   ```sql
+   CREATE DATABASE myb_personel;
+   ```
+4. Veritabanına bağlanın ve PostGIS eklentisini etkinleştirin:
+   ```sql
+   \c myb_personel;
+   CREATE EXTENSION postgis;
+   ```
+5. `.env` dosyasındaki `DB_HOST`, `DB_PORT`, `DB_USER` ve `DB_PASSWORD` alanlarını kendi yerel kurulumunuza göre güncelleyin.
+
 ## Dizin Yapısı
 
 ```

@@ -13,14 +13,15 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bullmq';
+import type { Queue } from 'bull';
 import * as XLSX from 'xlsx';
 
 interface ExcelRow {
     Ad: string;
-    Soyad: string;
+    Soyad?: string;
     Tel: string;
-    Apartman: string;
+    Apartman?: string;
+    Borç?: string | number;
 }
 
 @Controller('announcements')
@@ -33,10 +34,6 @@ export class AnnouncementsController {
         private readonly whatsappQueue: Queue,
     ) { }
 
-    /**
-     * Excel dosyasını parse eder ve önizleme (preview) döner.
-     * Hatalı satırları ayrıca işaretler.
-     */
     @Post('preview')
     @Roles('admin')
     @UseInterceptors(FileInterceptor('file'))
@@ -51,7 +48,7 @@ export class AnnouncementsController {
             const errors: string[] = [];
             if (!row.Ad) errors.push('Ad eksik');
             if (!row.Tel) errors.push('Telefon numarası eksik');
-            if (row.Tel && !/^\d{10,15}$/.test(row.Tel.replace(/\D/g, ''))) {
+            if (row.Tel && !/^\d{10,15}$/.test(row.Tel.toString().replace(/\D/g, ''))) {
                 errors.push('Geçersiz telefon formatı');
             }
 
@@ -71,41 +68,35 @@ export class AnnouncementsController {
         };
     }
 
-    /**
-     * Toplu WhatsApp mesajı gönderir.
-     */
     @Post('send')
     @Roles('admin')
     async sendBulk(
         @Body()
         body: {
-            recipients: { phone: string; name: string }[];
+            recipients: { phone: string; name: string; parameters?: { type: string; text: string }[] }[];
             template_name: string;
-            parameters?: { type: string; text: string }[];
+            global_parameters?: { type: string; text: string }[];
         },
     ) {
         if (!body.recipients || body.recipients.length === 0) {
             throw new BadRequestException('Alıcı listesi boş');
         }
 
-        // Her alıcı için kuyruğa ekle
-        const jobs = body.recipients.map((r) => ({
-            name: 'bulk-announcement',
-            data: {
+        const jobPromises = body.recipients.map((r) =>
+            this.whatsappQueue.add('bulk-announcement', {
                 phone: r.phone,
                 name: r.name,
                 templateName: body.template_name,
-                parameters: body.parameters || [],
-            },
-        }));
+                parameters: [...(body.global_parameters || []), ...(r.parameters || [])],
+            }),
+        );
 
-        await this.whatsappQueue.addBulk(jobs);
-
-        this.logger.log(`${jobs.length} duyuru mesajı kuyruğa eklendi`);
+        await Promise.all(jobPromises);
+        this.logger.log(`${body.recipients.length} mesaj kuyruğa eklendi`);
 
         return {
-            message: `${jobs.length} mesaj kuyruğa eklendi`,
-            queued_count: jobs.length,
+            message: `${body.recipients.length} mesaj kuyruğa eklendi`,
+            queued_count: body.recipients.length,
         };
     }
 
