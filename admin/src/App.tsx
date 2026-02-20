@@ -4,13 +4,11 @@ import { RequireAuth } from './components/RequireAuth';
 import Login from './pages/Login';
 import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
-
-// Placeholder components for future implementation
-const StaffPage = () => <div className="p-4">Personel Yönetimi (Yakında)</div>;
-const ApartmentsPage = () => <div className="p-4">Apartman Yönetimi (Yakında)</div>;
-const TasksPage = () => <div className="p-4">Görev Yönetimi (Yakında)</div>;
-const MapPage = () => <div className="p-4">Harita (Yakında)</div>;
-const AnnouncementsPage = () => <div className="p-4">Duyurular (Yakında)</div>;
+import StaffPage from './pages/StaffPage';
+import ApartmentsPage from './pages/ApartmentsPage';
+import TasksPage from './pages/TasksPage';
+import MapPage from './pages/MapPage';
+import AnnouncementsPage from './pages/AnnouncementsPage';
 
 function App() {
   return (
