@@ -18,11 +18,10 @@ import * as XLSX from 'xlsx';
 
 interface ExcelRow {
     Ad: string;
-    Soyad: string;
+    Soyad?: string;
     Tel: string;
-    Bina: string;
-    'Daire No': string;
-    Bakiye: string | number;
+    Apartman?: string;
+    Borç?: string | number;
 }
 
 @Controller('announcements')
@@ -35,10 +34,6 @@ export class AnnouncementsController {
         private readonly whatsappQueue: Queue,
     ) { }
 
-    /**
-     * Excel dosyasını parse eder ve önizleme (preview) döner.
-     * Hatalı satırları ayrıca işaretler.
-     */
     @Post('preview')
     @Roles('admin')
     @UseInterceptors(FileInterceptor('file'))
@@ -76,9 +71,6 @@ export class AnnouncementsController {
         };
     }
 
-    /**
-     * Toplu WhatsApp mesajı gönderir.
-     */
     @Post('send')
     @Roles('admin')
     async sendBulk(
@@ -102,8 +94,7 @@ export class AnnouncementsController {
         );
 
         await Promise.all(jobPromises);
-
-        this.logger.log(`${body.recipients.length} duyuru mesajı kuyruğa eklendi`);
+        this.logger.log(`${body.recipients.length} mesaj kuyruğa eklendi`);
 
         return {
             message: `${body.recipients.length} mesaj kuyruğa eklendi`,

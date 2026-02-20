@@ -4,11 +4,11 @@ import { RequireAuth } from './components/RequireAuth';
 import Login from './pages/Login';
 import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
-import Staff from './pages/Staff';
-import Apartments from './pages/Apartments';
-import Tasks from './pages/Tasks';
-import LiveMap from './pages/LiveMap';
-import Announcements from './pages/Announcements';
+import StaffPage from './pages/StaffPage';
+import ApartmentsPage from './pages/ApartmentsPage';
+import TasksPage from './pages/TasksPage';
+import MapPage from './pages/MapPage';
+import AnnouncementsPage from './pages/AnnouncementsPage';
 
 function App() {
   return (
