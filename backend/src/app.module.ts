@@ -10,6 +10,7 @@ import { GeofencingModule } from './geofencing/geofencing.module';
 import { TasksModule } from './tasks/tasks.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { AnnouncementsModule } from './announcements/announcements.module';
     TasksModule,
     WhatsappModule,
     AnnouncementsModule,
+    DashboardModule,
   ],
 })
 export class AppModule { }
