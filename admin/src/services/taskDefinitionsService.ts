@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import api from './api';
 
 export interface TaskDefinition {
     id: string;
@@ -13,22 +11,22 @@ export interface TaskDefinition {
 
 export const taskDefinitionsService = {
     getAll: async () => {
-        const response = await axios.get<TaskDefinition[]>(`${API_URL}/task-definitions`, { withCredentials: true });
+        const response = await api.get<TaskDefinition[]>('/task-definitions');
         return response.data;
     },
     getOne: async (id: string) => {
-        const response = await axios.get<TaskDefinition>(`${API_URL}/task-definitions/${id}`, { withCredentials: true });
+        const response = await api.get<TaskDefinition>(`/task-definitions/${id}`);
         return response.data;
     },
     create: async (data: Partial<TaskDefinition>) => {
-        const response = await axios.post<TaskDefinition>(`${API_URL}/task-definitions`, data, { withCredentials: true });
+        const response = await api.post<TaskDefinition>('/task-definitions', data);
         return response.data;
     },
     update: async (id: string, data: Partial<TaskDefinition>) => {
-        const response = await axios.put<TaskDefinition>(`${API_URL}/task-definitions/${id}`, data, { withCredentials: true });
+        const response = await api.put<TaskDefinition>(`/task-definitions/${id}`, data);
         return response.data;
     },
     delete: async (id: string) => {
-        await axios.delete(`${API_URL}/task-definitions/${id}`, { withCredentials: true });
+        await api.delete(`/task-definitions/${id}`);
     }
 };

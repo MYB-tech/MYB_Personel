@@ -26,7 +26,7 @@ export default function TaskDefinitionsPage() {
         try {
             const [dData, tData] = await Promise.all([
                 taskDefinitionsService.getAll(),
-                messageTemplatesService.getAll()
+                messageTemplatesService.findAll()
             ]);
             setDefinitions(dData);
             setTemplates(tData);
