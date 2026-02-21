@@ -32,7 +32,7 @@ export class TasksService {
 
     async findAll(): Promise<Task[]> {
         return this.taskRepo.find({
-            relations: ['staff', 'apartment'],
+            relations: ['staff', 'apartment', 'definition'],
             order: { created_at: 'DESC' },
         });
     }
@@ -40,7 +40,7 @@ export class TasksService {
     async findByStaff(staffId: string): Promise<Task[]> {
         return this.taskRepo.find({
             where: { staff_id: staffId },
-            relations: ['apartment'],
+            relations: ['apartment', 'definition'],
             order: { schedule_start: 'ASC' },
         });
     }
@@ -48,7 +48,7 @@ export class TasksService {
     async findOne(id: string): Promise<Task> {
         const task = await this.taskRepo.findOne({
             where: { id },
-            relations: ['staff', 'apartment'],
+            relations: ['staff', 'apartment', 'definition'],
         });
         if (!task) throw new NotFoundException('Görev bulunamadı');
         return task;
@@ -70,6 +70,7 @@ export class TasksService {
             staff_id: dto.staff_id,
             apartment_id: dto.apartment_id,
             type: dto.type,
+            definition_id: dto.definition_id,
             scheduled_days: dto.scheduled_days,
             schedule_start: dto.schedule_start,
             schedule_end: dto.schedule_end,
@@ -138,6 +139,7 @@ export class TasksService {
                 taskType: task.type,
                 staffName: task.staff?.name,
                 startedAt: now.toISOString(),
+                messageTemplateId: task.definition?.message_template_id,
             });
             this.logger.log(`WhatsApp bildirim kuyruğa eklendi: görev ${taskId}`);
         } catch (err) {

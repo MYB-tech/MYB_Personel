@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { tasksService } from '../services/tasksService';
 import type { Task, CreateTaskDto, TaskStatus } from '../services/tasksService';
+import { taskDefinitionsService, TaskDefinition } from '../services/taskDefinitionsService';
 import { staffService } from '../services/staffService';
 import type { Staff } from '../services/staffService';
 import { apartmentsService } from '../services/apartmentsService';
@@ -25,6 +26,7 @@ export default function TasksPage() {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [staffList, setStaffList] = useState<Staff[]>([]);
     const [apartments, setApartments] = useState<Apartment[]>([]);
+    const [definitions, setDefinitions] = useState<TaskDefinition[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Modal & Form State
@@ -32,7 +34,8 @@ export default function TasksPage() {
     const [formData, setFormData] = useState<CreateTaskDto>({
         staff_id: '',
         apartment_id: '',
-        type: 'Çöp Toplama',
+        type: '',
+        definition_id: '',
         scheduled_days: [],
         schedule_start: '19:00',
         schedule_end: '20:00',
@@ -46,14 +49,16 @@ export default function TasksPage() {
 
     const loadData = async () => {
         try {
-            const [tData, sData, aData] = await Promise.all([
+            const [tData, sData, aData, dData] = await Promise.all([
                 tasksService.getAll(),
                 staffService.getAll(),
-                apartmentsService.getAll()
+                apartmentsService.getAll(),
+                taskDefinitionsService.getAll()
             ]);
             setTasks(tData);
             setStaffList(sData);
             setApartments(aData);
+            setDefinitions(dData);
         } catch (error) {
             console.error('Error loading data:', error);
         } finally {
@@ -97,7 +102,8 @@ export default function TasksPage() {
             setFormData({
                 staff_id: '',
                 apartment_id: '',
-                type: 'Çöp Toplama',
+                type: '',
+                definition_id: '',
                 scheduled_days: [],
                 schedule_start: '19:00',
                 schedule_end: '20:00',
@@ -259,13 +265,21 @@ export default function TasksPage() {
                         <label className="text-sm font-medium">Görev Tipi</label>
                         <select
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            value={formData.type}
-                            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                            value={formData.definition_id}
+                            onChange={(e) => {
+                                const def = definitions.find(d => d.id === e.target.value);
+                                setFormData({
+                                    ...formData,
+                                    definition_id: e.target.value,
+                                    type: def ? def.name : ''
+                                });
+                            }}
+                            required
                         >
-                            <option value="Çöp Toplama">Çöp Toplama</option>
-                            <option value="Temizlik">Temizlik</option>
-                            <option value="Bahçe Bakımı">Bahçe Bakımı</option>
-                            <option value="Güvenlik Kontrolü">Güvenlik Kontrolü</option>
+                            <option value="">Seçiniz...</option>
+                            {definitions.map(def => (
+                                <option key={def.id} value={def.id}>{def.name}</option>
+                            ))}
                         </select>
                     </div>
 
