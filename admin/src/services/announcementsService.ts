@@ -20,10 +20,19 @@ export const announcementsService = {
         return response.data;
     },
 
-    sendBulk: async (recipients: any[], messageTemplate: string) => {
+    sendBulk: async (
+        recipients: any[],
+        messageTemplate: string,
+        isMeta?: boolean,
+        metaTemplateName?: string,
+        metaLanguage?: string
+    ) => {
         const response = await api.post('/announcements/send', {
             recipients,
             messageTemplate,
+            isMeta,
+            metaTemplateName,
+            metaLanguage,
         });
         return response.data;
     },

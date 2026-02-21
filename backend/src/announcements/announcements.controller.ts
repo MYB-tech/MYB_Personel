@@ -79,6 +79,9 @@ export class AnnouncementsController {
         body: {
             recipients: ExcelRow[];
             messageTemplate: string;
+            isMeta?: boolean;
+            metaTemplateName?: string;
+            metaLanguage?: string;
         },
     ) {
         if (!body.recipients || body.recipients.length === 0) {
@@ -91,6 +94,9 @@ export class AnnouncementsController {
                 phone: row.Tel,
                 recipientData: row,
                 messageTemplate: body.messageTemplate,
+                isMeta: body.isMeta,
+                metaTemplateName: body.metaTemplateName,
+                metaLanguage: body.metaLanguage,
             }),
         );
 

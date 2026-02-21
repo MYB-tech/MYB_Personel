@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { announcementsService } from '../services/announcementsService';
+import { messageTemplatesService } from '../services/messageTemplatesService';
+import type { MessageTemplate } from '../services/messageTemplatesService';
 import type { AnnouncementPreview } from '../services/announcementsService';
 import { Button } from '../components/ui/button';
-import { Upload, AlertTriangle, CheckCircle, Send, FileSpreadsheet } from 'lucide-react';
+import { Upload, AlertTriangle, CheckCircle, Send, FileSpreadsheet, Save, Trash2 } from 'lucide-react';
 
 interface ExcelRow {
     Ad: string;
@@ -20,6 +22,95 @@ export default function AnnouncementsPage() {
     const [sending, setSending] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [messageTemplate, setMessageTemplate] = useState('');
+
+    // Template states
+    const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+    const [templateName, setTemplateName] = useState('');
+    const [isMeta, setIsMeta] = useState(false);
+    const [metaTemplateName, setMetaTemplateName] = useState('');
+    const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+
+    useEffect(() => {
+        loadTemplates();
+    }, []);
+
+    const loadTemplates = async () => {
+        try {
+            const data = await messageTemplatesService.findAll();
+            setTemplates(data);
+        } catch (error) {
+            console.error('Error loading templates:', error);
+        }
+    };
+
+    const handleSelectTemplate = (id: string) => {
+        setSelectedTemplateId(id);
+        if (id === '') {
+            setTemplateName('');
+            setMessageTemplate('');
+            setIsMeta(false);
+            setMetaTemplateName('');
+            return;
+        }
+
+        const template = templates.find(t => t.id.toString() === id);
+        if (template) {
+            setTemplateName(template.name);
+            setMessageTemplate(template.content);
+            setIsMeta(template.is_meta);
+            setMetaTemplateName(template.meta_template_name || '');
+        }
+    };
+
+    const handleSaveTemplate = async () => {
+        if (!templateName.trim()) {
+            alert('Lütfen şablon için bir isim girin.');
+            return;
+        }
+        if (!messageTemplate.trim()) {
+            alert('Şablon içeriği boş olamaz.');
+            return;
+        }
+
+        setIsSavingTemplate(true);
+        try {
+            const payload = {
+                name: templateName,
+                content: messageTemplate,
+                is_meta: isMeta,
+                meta_template_name: isMeta ? metaTemplateName : null,
+            };
+
+            if (selectedTemplateId) {
+                await messageTemplatesService.update(parseInt(selectedTemplateId), payload);
+            } else {
+                const newTemplate = await messageTemplatesService.create(payload);
+                setSelectedTemplateId(newTemplate.id.toString());
+            }
+            await loadTemplates();
+            alert('Şablon kaydedildi.');
+        } catch (error) {
+            console.error('Error saving template:', error);
+            alert('Şablon kaydedilirken hata oluştu.');
+        } finally {
+            setIsSavingTemplate(false);
+        }
+    };
+
+    const handleDeleteTemplate = async () => {
+        if (!selectedTemplateId) return;
+        if (!window.confirm('Bu şablonu silmek istediğinize emin misiniz?')) return;
+
+        try {
+            await messageTemplatesService.remove(parseInt(selectedTemplateId));
+            handleSelectTemplate('');
+            await loadTemplates();
+        } catch (error) {
+            console.error('Error deleting template:', error);
+            alert('Şablon silinirken hata oluştu.');
+        }
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -53,7 +144,12 @@ export default function AnnouncementsPage() {
 
         setSending(true);
         try {
-            await announcementsService.sendBulk(preview.valid, messageTemplate);
+            await announcementsService.sendBulk(
+                preview.valid,
+                messageTemplate,
+                isMeta,
+                metaTemplateName
+            );
             setSuccessMessage(`${preview.valid.length} mesaj başarıyla kuyruğa eklendi.`);
             setFile(null);
             setPreview(null);
@@ -121,35 +217,105 @@ export default function AnnouncementsPage() {
             )}
 
             {preview && (
-                <div className="bg-card border border-border rounded-lg p-6 space-y-4">
-                    <h3 className="text-lg font-semibold">Mesaj İçeriği</h3>
-                    <p className="text-sm text-muted-foreground">
-                        Aşağıdaki butonları kullanarak dinamik alanlar ekleyebilirsiniz.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        {[
-                            { label: 'Ad', value: '<ad>' },
-                            { label: 'Soyad', value: '<soyad>' },
-                            { label: 'Apartman', value: '<apartman>' },
-                            { label: 'Daire No', value: '<daire_no>' },
-                            { label: 'Telefon', value: '<tel_no>' },
-                            { label: 'Bakiye', value: '<bakiye>' },
-                        ].map((tag) => (
-                            <button
-                                key={tag.value}
-                                onClick={() => setMessageTemplate(prev => prev + tag.value)}
-                                className="px-3 py-1 bg-primary/10 text-primary rounded-md text-sm hover:bg-primary/20 transition-colors"
+                <div className="bg-card border border-border rounded-lg p-6 space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <h3 className="text-lg font-semibold">Mesaj İçeriği ve Şablonlar</h3>
+                        <div className="flex items-center gap-2">
+                            <select
+                                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                value={selectedTemplateId}
+                                onChange={(e) => handleSelectTemplate(e.target.value)}
                             >
-                                {tag.label} ({tag.value})
-                            </button>
-                        ))}
+                                <option value="">-- Şablon Seçin --</option>
+                                {templates.map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
+                            </select>
+                            {selectedTemplateId && (
+                                <Button variant="destructive" size="icon" onClick={handleDeleteTemplate}>
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            )}
+                        </div>
                     </div>
-                    <textarea
-                        className="w-full min-h-[150px] p-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        placeholder="Mesajınızı buraya yazın..."
-                        value={messageTemplate}
-                        onChange={(e) => setMessageTemplate(e.target.value)}
-                    />
+
+                    <div className="space-y-4 border-t border-border pt-4">
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Şablon Adı</label>
+                                <input
+                                    type="text"
+                                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    placeholder="Örn: Aidat Hatırlatma"
+                                    value={templateName}
+                                    onChange={(e) => setTemplateName(e.target.value)}
+                                />
+                            </div>
+                            <div className="flex items-end gap-4">
+                                <div className="flex items-center gap-2 h-10">
+                                    <input
+                                        type="checkbox"
+                                        id="isMeta"
+                                        checked={isMeta}
+                                        onChange={(e) => setIsMeta(e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                    />
+                                    <label htmlFor="isMeta" className="text-sm font-medium cursor-pointer">
+                                        Meta API Şablonu mu?
+                                    </label>
+                                </div>
+                                {isMeta && (
+                                    <div className="flex-1 space-y-2">
+                                        <label className="text-sm font-medium">Meta Şablon Adı</label>
+                                        <input
+                                            type="text"
+                                            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                            placeholder="Örn: aidat_bildirimi"
+                                            value={metaTemplateName}
+                                            onChange={(e) => setMetaTemplateName(e.target.value)}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <p className="text-sm text-muted-foreground">
+                                Aşağıdaki butonları kullanarak dinamik alanlar ekleyebilirsiniz.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { label: 'Ad', value: '<ad>' },
+                                    { label: 'Soyad', value: '<soyad>' },
+                                    { label: 'Apartman', value: '<apartman>' },
+                                    { label: 'Daire No', value: '<daire_no>' },
+                                    { label: 'Telefon', value: '<tel_no>' },
+                                    { label: 'Bakiye', value: '<bakiye>' },
+                                ].map((tag) => (
+                                    <button
+                                        key={tag.value}
+                                        onClick={() => setMessageTemplate(prev => prev + tag.value)}
+                                        className="px-3 py-1 bg-primary/10 text-primary rounded-md text-sm hover:bg-primary/20 transition-colors"
+                                    >
+                                        {tag.label} ({tag.value})
+                                    </button>
+                                ))}
+                            </div>
+                            <textarea
+                                className="w-full min-h-[150px] p-3 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                placeholder="Mesajınızı buraya yazın..."
+                                value={messageTemplate}
+                                onChange={(e) => setMessageTemplate(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="flex justify-end">
+                            <Button variant="outline" onClick={handleSaveTemplate} isLoading={isSavingTemplate}>
+                                <Save className="mr-2 h-4 w-4" />
+                                {selectedTemplateId ? 'Şablonu Güncelle' : 'Şablon Olarak Kaydet'}
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             )}
 
