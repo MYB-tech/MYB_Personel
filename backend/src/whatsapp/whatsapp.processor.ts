@@ -63,11 +63,9 @@ export class WhatsappProcessor {
 
     @Process('bulk-announcement')
     async handleBulkAnnouncement(job: Job) {
-        const { phone, recipientData, messageTemplate } = job.data;
+        const { phone, recipientData, messageTemplate, isMeta, metaTemplateName, metaLanguage } = job.data;
 
         try {
-            // Placeholder replacement
-            let personalizedMessage = messageTemplate;
             const replacements = {
                 '<ad>': recipientData.Ad || '',
                 '<soyad>': recipientData.Soyad || '',
@@ -79,14 +77,33 @@ export class WhatsappProcessor {
                 '<bakiye>': recipientData.Bakiye?.toString() || '0',
             };
 
-            for (const [placeholder, value] of Object.entries(replacements)) {
-                personalizedMessage = personalizedMessage.replace(
-                    new RegExp(placeholder, 'gi'),
-                    value,
+            if (isMeta && metaTemplateName) {
+                // Find all placeholders in messageTemplate to determine parameter order
+                const placeholderRegex = /<[^>]+>/g;
+                const matches = (messageTemplate.match(placeholderRegex) || []) as string[];
+                const parameters = matches.map((tag: string) => {
+                    const value = (replacements as any)[tag.toLowerCase()] || '';
+                    return { type: 'text' as const, text: value };
+                });
+
+                await this.metaApi.sendTemplateMessage(
+                    phone,
+                    metaTemplateName,
+                    metaLanguage || 'tr',
+                    parameters
                 );
+            } else {
+                // Placeholder replacement for free text
+                let personalizedMessage = messageTemplate;
+                for (const [placeholder, value] of Object.entries(replacements)) {
+                    personalizedMessage = personalizedMessage.replace(
+                        new RegExp(placeholder, 'gi'),
+                        value,
+                    );
+                }
+                await this.metaApi.sendTextMessage(phone, personalizedMessage);
             }
 
-            await this.metaApi.sendTextMessage(phone, personalizedMessage);
             this.logger.log(`Duyuru mesajı gönderildi: ${phone}`);
         } catch (error) {
             this.logger.error(`Duyuru mesajı gönderilemedi: ${phone}`);
