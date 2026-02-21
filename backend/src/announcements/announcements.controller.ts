@@ -19,7 +19,7 @@ import * as XLSX from 'xlsx';
 interface ExcelRow {
     Ad: string;
     Soyad?: string;
-    Bina?: string;
+    Apartman?: string;
     'Daire No'?: string | number;
     Tel: string;
     Bakiye: string | number;
@@ -107,6 +107,15 @@ export class AnnouncementsController {
         const workbook = XLSX.read(buffer, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        return XLSX.utils.sheet_to_json<ExcelRow>(sheet);
+        const rows = XLSX.utils.sheet_to_json<any>(sheet);
+
+        return rows.map(row => ({
+            Ad: row['Ad'] || row['ad'] || '',
+            Soyad: row['Soyad'] || row['soyad'] || '',
+            Apartman: row['Apartman'] || row['apartman'] || row['Bina'] || row['bina'] || '',
+            'Daire No': row['Daire No'] || row['daire no'] || row['Daire'] || row['daire'] || '',
+            Tel: (row['Tel No'] || row['tel no'] || row['Tel'] || row['tel'] || '')?.toString().replace(/\D/g, ''),
+            Bakiye: row['Bakiye'] || row['bakiye'] || 0
+        }));
     }
 }

@@ -67,8 +67,8 @@ export default function Dashboard() {
                 })}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <div className="col-span-4 bg-card border border-border rounded-xl p-6">
+            <div className="grid gap-4 grid-cols-1">
+                <div className="bg-card border border-border rounded-xl p-6">
                     <h3 className="text-lg font-medium mb-4">Son Aktiviteler</h3>
                     <div className="space-y-4">
                         {data?.recentActivities && data.recentActivities.length > 0 ? (
@@ -104,12 +104,6 @@ export default function Dashboard() {
                         ) : (
                             <p className="text-sm text-muted-foreground">Henüz veri yok.</p>
                         )}
-                    </div>
-                </div>
-                <div className="col-span-3 bg-card border border-border rounded-xl p-6">
-                    <h3 className="text-lg font-medium mb-4">Canlı Durum</h3>
-                    <div className="h-[200px] w-full bg-muted/20 rounded-md flex items-center justify-center text-muted-foreground text-sm">
-                        Harita yükleniyor...
                     </div>
                 </div>
             </div>

@@ -71,9 +71,11 @@ export class WhatsappProcessor {
             const replacements = {
                 '<ad>': recipientData.Ad || '',
                 '<soyad>': recipientData.Soyad || '',
-                '<bina>': recipientData.Bina || '',
+                '<bina>': recipientData.Apartman || recipientData.Bina || '',
+                '<apartman>': recipientData.Apartman || recipientData.Bina || '',
                 '<daire_no>': recipientData['Daire No'] || '',
                 '<tel>': recipientData.Tel || '',
+                '<tel_no>': recipientData.Tel || '',
                 '<bakiye>': recipientData.Bakiye?.toString() || '0',
             };
 

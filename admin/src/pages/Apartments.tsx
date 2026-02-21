@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Modal } from '../components/ui/modal';
 import { LocationPicker } from '../components/ui/location-picker';
-import { Plus, Edit2, Trash2, Search, Users } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Users, FileUp } from 'lucide-react';
 
 export default function ApartmentsPage() {
     const [apartments, setApartments] = useState<Apartment[]>([]);
@@ -14,6 +14,7 @@ export default function ApartmentsPage() {
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [selectedApt, setSelectedApt] = useState<Apartment | null>(null);
     const [formData, setFormData] = useState<CreateApartmentDto>({
         name: '',
@@ -22,6 +23,10 @@ export default function ApartmentsPage() {
         longitude: 28.9784
     });
     const [formLoading, setFormLoading] = useState(false);
+
+    // Import State
+    const [importFile, setImportFile] = useState<File | null>(null);
+    const [importLoading, setImportLoading] = useState(false);
 
     useEffect(() => {
         fetchApartments();
@@ -53,6 +58,29 @@ export default function ApartmentsPage() {
             longitude: apt.location.coordinates[0]
         });
         setIsModalOpen(true);
+    };
+
+    const handleImportClick = (apt: Apartment) => {
+        setSelectedApt(apt);
+        setImportFile(null);
+        setIsImportModalOpen(true);
+    };
+
+    const handleImportSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedApt || !importFile) return;
+        setImportLoading(true);
+        try {
+            await apartmentsService.importUnits(selectedApt.id, importFile);
+            alert('Daireler başarıyla yüklendi.');
+            setIsImportModalOpen(false);
+            fetchApartments();
+        } catch (error) {
+            console.error('Error importing units:', error);
+            alert('Yükleme sırasında bir hata oluştu.');
+        } finally {
+            setImportLoading(false);
+        }
     };
 
     const handleDelete = async (id: string) => {
@@ -122,7 +150,7 @@ export default function ApartmentsPage() {
                             <tr className="border-b border-border transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                                 <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Apartman Adı</th>
                                 <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Adres</th>
-                                <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Konum</th>
+                                <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Daire Sayısı</th>
                                 <th className="h-12 px-4 align-middle font-medium text-muted-foreground">Sakinler</th>
                                 <th className="h-12 px-4 align-middle font-medium text-muted-foreground text-right">İşlemler</th>
                             </tr>
@@ -141,9 +169,7 @@ export default function ApartmentsPage() {
                                     <tr key={apt.id} className="border-b border-border transition-colors hover:bg-muted/50">
                                         <td className="p-4 align-middle font-medium">{apt.name}</td>
                                         <td className="p-4 align-middle max-w-md truncate">{apt.address || '-'}</td>
-                                        <td className="p-4 align-middle text-xs font-mono text-muted-foreground">
-                                            {apt.location.coordinates[1].toFixed(5)}, {apt.location.coordinates[0].toFixed(5)}
-                                        </td>
+                                        <td className="p-4 align-middle">{apt.unit_count || 0} Daire</td>
                                         <td className="p-4 align-middle">
                                             <div className="flex items-center gap-1">
                                                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -151,6 +177,9 @@ export default function ApartmentsPage() {
                                             </div>
                                         </td>
                                         <td className="p-4 align-middle text-right">
+                                            <Button variant="ghost" size="icon" title="Daireleri Yükle" onClick={() => handleImportClick(apt)}>
+                                                <FileUp className="h-4 w-4" />
+                                            </Button>
                                             <Button variant="ghost" size="icon" onClick={() => handleEdit(apt)}>
                                                 <Edit2 className="h-4 w-4" />
                                             </Button>
@@ -165,6 +194,33 @@ export default function ApartmentsPage() {
                     </table>
                 </div>
             </div>
+
+            <Modal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                title={`${selectedApt?.name} - Daire Listesi Yükle`}
+            >
+                <form onSubmit={handleImportSubmit} className="space-y-4">
+                    <div className="p-6 border-2 border-dashed border-border rounded-lg text-center space-y-2">
+                        <FileUp className="h-8 w-8 mx-auto text-muted-foreground" />
+                        <div className="text-sm">
+                            <p className="font-medium">Excel dosyasını seçin</p>
+                            <p className="text-muted-foreground">Sütunlar: Daire No, Mal Sahibi, Mal Sahibi Tel, Kiracı, Kiracı Tel</p>
+                        </div>
+                        <input
+                            type="file"
+                            accept=".xlsx, .xls"
+                            onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                            className="text-xs mx-auto"
+                            required
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button type="button" variant="outline" onClick={() => setIsImportModalOpen(false)}>İptal</Button>
+                        <Button type="submit" isLoading={importLoading} disabled={!importFile}>Yükle</Button>
+                    </div>
+                </form>
+            </Modal>
 
             <Modal
                 isOpen={isModalOpen}

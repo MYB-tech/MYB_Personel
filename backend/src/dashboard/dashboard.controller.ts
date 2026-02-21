@@ -14,4 +14,10 @@ export class DashboardController {
     async getStats() {
         return this.dashboardService.getStats();
     }
+
+    @Get('weekly-schedule')
+    @Roles('admin')
+    async getWeeklySchedule() {
+        return this.dashboardService.getWeeklySchedule();
+    }
 }

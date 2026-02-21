@@ -55,4 +55,39 @@ export class DashboardService {
             recentActivities,
         };
     }
+
+    async getWeeklySchedule() {
+        const staffList = await this.staffRepo.find({ order: { name: 'ASC' } });
+        const tasks = await this.taskRepo.find({
+            relations: ['apartment', 'staff'],
+        });
+
+        const dayNames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+        const schedule = staffList.map((staff) => {
+            const staffTasks = tasks.filter((t) => t.staff_id === staff.id);
+            const days = dayNames.map((day) => {
+                const dayTasks = staffTasks.filter((t) =>
+                    t.scheduled_days.includes(day),
+                );
+                return {
+                    day,
+                    tasks: dayTasks.map((t) => ({
+                        id: t.id,
+                        type: t.type,
+                        apartment: t.apartment?.name || 'Bilinmiyor',
+                        time: `${t.schedule_start}-${t.schedule_end}`,
+                        status: t.status,
+                    })),
+                };
+            });
+            return {
+                staffId: staff.id,
+                staffName: staff.name,
+                days,
+            };
+        });
+
+        return schedule;
+    }
 }
