@@ -5,12 +5,15 @@ export interface Resident {
     first_name: string;
     last_name: string;
     phone: string;
+    unit_number?: string;
+    type: 'OWNER' | 'TENANT';
 }
 
 export interface Apartment {
     id: string;
     name: string;
     address?: string;
+    unit_count: number;
     location: {
         type: string;
         coordinates: [number, number]; // [lng, lat]
@@ -48,5 +51,14 @@ export const apartmentsService = {
 
     delete: async (id: string) => {
         await api.delete(`/apartments/${id}`);
+    },
+
+    importUnits: async (id: string, file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post(`/apartments/${id}/import-units`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return response.data;
     },
 };

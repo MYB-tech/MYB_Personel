@@ -5,11 +5,11 @@ import {
     Users,
     Building2,
     CalendarCheck,
-    Map,
     Megaphone,
     LogOut,
     Menu,
-    X
+    X,
+    CalendarDays
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '../utils/cn';
@@ -30,7 +30,7 @@ export default function DashboardLayout() {
         { href: '/staff', label: 'Personel', icon: Users },
         { href: '/apartments', label: 'Apartmanlar', icon: Building2 },
         { href: '/tasks', label: 'Görevler', icon: CalendarCheck },
-        { href: '/map', label: 'Canlı Harita', icon: Map },
+        { href: '/schedule', label: 'Haftalık Çizelge', icon: CalendarDays },
         { href: '/announcements', label: 'Duyurular', icon: Megaphone },
     ];
 

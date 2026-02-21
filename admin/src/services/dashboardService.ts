@@ -13,8 +13,14 @@ export const getStats = async (): Promise<DashboardStats> => {
     return response.data;
 };
 
+export const getWeeklySchedule = async (): Promise<any[]> => {
+    const response = await api.get('/dashboard/weekly-schedule');
+    return response.data;
+};
+
 const dashboardService = {
     getStats,
+    getWeeklySchedule,
 };
 
 export default dashboardService;

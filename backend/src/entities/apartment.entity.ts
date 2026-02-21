@@ -20,6 +20,9 @@ export class Apartment {
     @Column({ type: 'text', nullable: true })
     address: string;
 
+    @Column({ type: 'int', default: 0 })
+    unit_count: number;
+
     // PostGIS POINT — stored as { type: 'Point', coordinates: [lng, lat] }
     @Column({
         type: 'geometry',

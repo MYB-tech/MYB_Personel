@@ -7,8 +7,11 @@ import {
     Body,
     Param,
     UseGuards,
+    UseInterceptors,
+    UploadedFile,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { ApartmentsService } from './apartments.service';
@@ -48,5 +51,15 @@ export class ApartmentsController {
     @Roles('admin')
     remove(@Param('id') id: string) {
         return this.aptService.remove(id);
+    }
+
+    @Post(':id/import-units')
+    @Roles('admin')
+    @UseInterceptors(FileInterceptor('file'))
+    importUnits(
+        @Param('id') id: string,
+        @UploadedFile() file: Express.Multer.File,
+    ) {
+        return this.aptService.importUnits(id, file.buffer);
     }
 }

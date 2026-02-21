@@ -8,7 +8,7 @@ interface ExcelRow {
     Ad: string;
     Soyad: string;
     Tel: string;
-    Bina: string;
+    Apartman: string;
     'Daire No': string;
     Bakiye: string | number;
 }
@@ -81,7 +81,7 @@ export default function AnnouncementsPage() {
                     <div className="space-y-2">
                         <h3 className="text-lg font-semibold">Excel Dosyası Yükle</h3>
                         <p className="text-sm text-muted-foreground">
-                            Sütunlar: <code>Ad, Soyad, Bina, Daire No, Tel, Bakiye</code>
+                            Sütunlar: <code>Apartman, Daire No, Ad, Soyad, Tel No, Bakiye</code>
                         </p>
                     </div>
 
@@ -130,9 +130,9 @@ export default function AnnouncementsPage() {
                         {[
                             { label: 'Ad', value: '<ad>' },
                             { label: 'Soyad', value: '<soyad>' },
-                            { label: 'Bina', value: '<bina>' },
+                            { label: 'Apartman', value: '<apartman>' },
                             { label: 'Daire No', value: '<daire_no>' },
-                            { label: 'Telefon', value: '<tel>' },
+                            { label: 'Telefon', value: '<tel_no>' },
                             { label: 'Bakiye', value: '<bakiye>' },
                         ].map((tag) => (
                             <button
@@ -168,7 +168,7 @@ export default function AnnouncementsPage() {
                                 <thead className="bg-muted/50 sticky top-0">
                                     <tr>
                                         <th className="p-3 text-left">Ad Soyad</th>
-                                        <th className="p-3 text-left">Bina / Daire</th>
+                                        <th className="p-3 text-left">Apartman / Daire</th>
                                         <th className="p-3 text-left">Telefon</th>
                                         <th className="p-3 text-left">Bakiye</th>
                                     </tr>
@@ -177,7 +177,7 @@ export default function AnnouncementsPage() {
                                     {preview.valid.map((row: ExcelRow, i) => (
                                         <tr key={i} className="border-b border-border last:border-0">
                                             <td className="p-3 font-medium">{row.Ad} {row.Soyad}</td>
-                                            <td className="p-3">{row.Bina} / {row['Daire No']}</td>
+                                            <td className="p-3">{row.Apartman} / {row['Daire No']}</td>
                                             <td className="p-3">{row.Tel}</td>
                                             <td className="p-3">{row.Bakiye} TL</td>
                                         </tr>
