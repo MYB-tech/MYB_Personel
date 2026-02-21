@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class Task {
   final String id;
   final String type;
@@ -42,5 +44,31 @@ class Task {
       latitude: (loc['coordinates'][1] as num).toDouble(),
       longitude: (loc['coordinates'][0] as num).toDouble(),
     );
+  }
+
+  String get localizedType {
+    switch (type.toLowerCase()) {
+      case 'garbage':
+        return 'Çöp Toplama';
+      case 'cleaning':
+        return 'Temizlik';
+      case 'security':
+        return 'Güvenlik Turu';
+      default:
+        return type;
+    }
+  }
+
+  IconData get icon {
+    switch (type.toLowerCase()) {
+      case 'garbage':
+        return Icons.delete_outline;
+      case 'cleaning':
+        return Icons.cleaning_services;
+      case 'security':
+        return Icons.security;
+      default:
+        return Icons.task_alt;
+    }
   }
 }

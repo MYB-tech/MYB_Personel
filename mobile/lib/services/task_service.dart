@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/constants.dart';
 import '../models/task.dart';
 
 class TaskService {
-  static const String baseUrl = 'http://10.0.2.2:3000';
+  final String baseUrl = AppConstants.baseUrl;
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -17,8 +18,8 @@ class TaskService {
 
     final response = await http.get(
       Uri.parse(
-        '$baseUrl/tasks/my-tasks',
-      ), // We need to ensure this endpoint exists in backend or use filter
+        '$baseUrl/tasks/my',
+      ),
       headers: {'Authorization': 'Bearer $token'},
     );
 

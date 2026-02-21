@@ -80,6 +80,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,30 +92,31 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         backgroundColor: const Color(0xFF1E4E76),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.task.type,
-                    style: const TextStyle(
-                      color: Colors.blueAccent,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.task.localizedType,
+                      style: const TextStyle(
+                        color: Color(0xFF38BDF8),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 12),
                   const Text(
                     'APARTMAN',
@@ -223,6 +225,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           ],
         ),
       ),
-    );
+    ),);
   }
 }
