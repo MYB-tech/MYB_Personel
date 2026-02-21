@@ -7,7 +7,6 @@ import {
     CalendarCheck,
     Megaphone,
     LogOut,
-    Settings2,
     Menu,
     X,
     CalendarDays
@@ -31,7 +30,6 @@ export default function DashboardLayout() {
         { href: '/staff', label: 'Personel', icon: Users },
         { href: '/apartments', label: 'Apartmanlar', icon: Building2 },
         { href: '/tasks', label: 'Görevler', icon: CalendarCheck },
-        { href: '/task-definitions', label: 'Görev Tanımları', icon: Settings2 },
         { href: '/schedule', label: 'Haftalık Çizelge', icon: CalendarDays },
         { href: '/announcements', label: 'Duyurular', icon: Megaphone },
     ];

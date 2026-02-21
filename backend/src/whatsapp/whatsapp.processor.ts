@@ -5,7 +5,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MetaApiClient } from './meta-api.client';
 import { Resident } from '../entities/resident.entity';
-import { MessageTemplate } from '../entities/message-template.entity';
 
 @Processor('whatsapp')
 export class WhatsappProcessor {
@@ -15,13 +14,11 @@ export class WhatsappProcessor {
         private readonly metaApi: MetaApiClient,
         @InjectRepository(Resident)
         private readonly residentRepo: Repository<Resident>,
-        @InjectRepository(MessageTemplate)
-        private readonly templateRepo: Repository<MessageTemplate>,
     ) { }
 
     @Process('task-started')
     async handleTaskStarted(job: Job) {
-        const { apartmentId, taskType, staffName, startedAt, messageTemplateId } = job.data;
+        const { apartmentId, taskType, staffName, startedAt } = job.data;
 
         this.logger.log(
             `WhatsApp bildirimi işleniyor: Apartman ${apartmentId}, Görev: ${taskType}`,
@@ -37,58 +34,23 @@ export class WhatsappProcessor {
             return;
         }
 
-        let template: MessageTemplate | null = null;
-        if (messageTemplateId) {
-            template = await this.templateRepo.findOne({ where: { id: messageTemplateId } });
-        }
-
-        // Her sakin için mesaj gönder
+        // Her sakin için şablon mesaj gönder
         const results = await Promise.allSettled(
-            residents.map((resident) => {
-                if (template) {
-                    if (template.is_meta && template.meta_template_name) {
-                        return this.metaApi.sendTemplateMessage(
-                            resident.phone,
-                            template.meta_template_name,
-                            template.meta_language || 'tr',
-                            [
-                                { type: 'text', text: taskType },
-                                { type: 'text', text: staffName || 'Personel' },
-                                {
-                                    type: 'text',
-                                    text: new Date(startedAt).toLocaleTimeString('tr-TR'),
-                                },
-                            ],
-                        );
-                    } else {
-                        // Free text personalized message
-                        let personalizedMessage = template.content;
-                        personalizedMessage = personalizedMessage
-                            .replace(/<ad>/gi, resident.name.split(' ')[0])
-                            .replace(/<soyad>/gi, resident.name.split(' ').slice(1).join(' '))
-                            .replace(/<görev>/gi, taskType)
-                            .replace(/<personel>/gi, staffName || 'Personel')
-                            .replace(/<saat>/gi, new Date(startedAt).toLocaleTimeString('tr-TR'));
-
-                        return this.metaApi.sendTextMessage(resident.phone, personalizedMessage);
-                    }
-                } else {
-                    // Fallback to default template
-                    return this.metaApi.sendTemplateMessage(
-                        resident.phone,
-                        'task_started_notification',
-                        'tr',
-                        [
-                            { type: 'text', text: taskType },
-                            { type: 'text', text: staffName || 'Personel' },
-                            {
-                                type: 'text',
-                                text: new Date(startedAt).toLocaleTimeString('tr-TR'),
-                            },
-                        ],
-                    );
-                }
-            }),
+            residents.map((resident) =>
+                this.metaApi.sendTemplateMessage(
+                    resident.phone,
+                    'task_started_notification',
+                    'tr',
+                    [
+                        { type: 'text', text: taskType },
+                        { type: 'text', text: staffName || 'Personel' },
+                        {
+                            type: 'text',
+                            text: new Date(startedAt).toLocaleTimeString('tr-TR'),
+                        },
+                    ],
+                ),
+            ),
         );
 
         const sent = results.filter((r) => r.status === 'fulfilled').length;

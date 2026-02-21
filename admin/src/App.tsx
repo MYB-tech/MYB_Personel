@@ -7,7 +7,6 @@ import Dashboard from './pages/Dashboard';
 import StaffPage from './pages/Staff';
 import ApartmentsPage from './pages/Apartments';
 import TasksPage from './pages/Tasks';
-import TaskDefinitionsPage from './pages/TaskDefinitions';
 import WeeklySchedulePage from './pages/WeeklySchedule';
 import AnnouncementsPage from './pages/Announcements';
 
@@ -27,7 +26,6 @@ function App() {
             <Route path="/staff" element={<StaffPage />} />
             <Route path="/apartments" element={<ApartmentsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
-            <Route path="/task-definitions" element={<TaskDefinitionsPage />} />
             <Route path="/schedule" element={<WeeklySchedulePage />} />
             <Route path="/announcements" element={<AnnouncementsPage />} />
           </Route>

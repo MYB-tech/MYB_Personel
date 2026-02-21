@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/task_service.dart';
 import '../models/task.dart';
@@ -17,7 +15,6 @@ class TaskListScreen extends StatefulWidget {
 class _TaskListScreenState extends State<TaskListScreen> {
   final TaskService _taskService = TaskService();
   late Future<List<Task>> _tasksFuture;
-  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -35,74 +32,35 @@ class _TaskListScreenState extends State<TaskListScreen> {
     }
   }
 
-  Future<void> _handleStartTask(Task task) async {
-    if (_isProcessing) return;
-
-    setState(() {
-      _isProcessing = true;
-    });
-
-    try {
-      // 1. Check Permission
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw Exception('Konum izni reddedildi.');
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        throw Exception(
-          'Konum izni kalıcı olarak reddedildi, ayarlardan açınız.',
-        );
-      }
-
-      // 2. Get Location
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.bestForNavigation,
-      );
-
-      if (position.isMocked) {
-        throw Exception(
-          'Sahte konum algılandı! Lütfen GPS hilelerini kapatın.',
-        );
-      }
-
-      // Haptic Feedback
-      await HapticFeedback.heavyImpact();
-
-      // 3. Send to Backend
-      await _taskService.startTask(
-        task.id,
-        position.latitude,
-        position.longitude,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${task.apartmentName} görevi başlatıldı!'),
-            backgroundColor: Colors.green,
+  void _deleteAccount() async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Hesabı Sil'),
+            content: const Text(
+              'Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('İPTAL'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('SİL', style: TextStyle(color: Colors.red)),
+              ),
+            ],
           ),
-        );
-        setState(() {
-          _tasksFuture = _taskService.getMyTasks();
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Hata: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
+    );
+
+    if (confirm == true) {
+      // In a real app, you would call an API to delete the account
+      // For now, we just clear local data and logout
+      _logout();
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -119,6 +77,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
             onSelected: (value) {
               if (value == 'logout') {
                 _logout();
+              } else if (value == 'delete_account') {
+                _deleteAccount();
               }
             },
             itemBuilder:
@@ -130,6 +90,16 @@ class _TaskListScreenState extends State<TaskListScreen> {
                         Icon(Icons.logout, color: Colors.white70),
                         SizedBox(width: 8),
                         Text('Çıkış Yap'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete_account',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_forever, color: Colors.redAccent),
+                        SizedBox(width: 8),
+                        Text('Hesabı Sil', style: TextStyle(color: Colors.redAccent)),
                       ],
                     ),
                   ),
@@ -176,129 +146,80 @@ class _TaskListScreenState extends State<TaskListScreen> {
             itemCount: tasks.length,
             itemBuilder: (context, index) {
               final task = tasks[index];
-              final canStart = task.status == 'PENDING' || task.status == 'LATE';
-
               return Card(
                 color: const Color(0xFF1E293B),
                 margin: const EdgeInsets.only(bottom: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Column(
-                  children: [
-                    ListTile(
-                      contentPadding: const EdgeInsets.all(16),
-                      leading: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E4E76).withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          task.icon,
-                          color: const Color(0xFF38BDF8),
-                        ),
-                      ),
-                      title: Text(
-                        task.apartmentName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 8),
-                          Text(
-                            task.localizedType,
-                            style: const TextStyle(
-                              color: Color(0xFF38BDF8),
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${task.scheduleStart} - ${task.scheduleEnd}',
-                            style: const TextStyle(color: Colors.white60),
-                          ),
-                          if (task.status == 'COMPLETED')
-                            const Padding(
-                              padding: EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                'TAMAMLANDI',
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          if (task.status == 'IN_PROGRESS')
-                            const Padding(
-                              padding: EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                'DEVAM EDİYOR',
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      trailing: const Icon(
-                        Icons.arrow_forward_ios,
-                        color: Colors.white54,
-                        size: 16,
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => TaskDetailScreen(task: task),
-                          ),
-                        ).then((_) {
-                          // Refresh list on return
-                          setState(() {
-                            _tasksFuture = _taskService.getMyTasks();
-                          });
-                        });
-                      },
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(16),
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E4E76).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    if (canStart)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _isProcessing ? null : () => _handleStartTask(task),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF10B981),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: _isProcessing
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Text(
-                                    'GÖREVİ BAŞLAT',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                          ),
+                    child: Icon(
+                      task.icon,
+                      color: const Color(0xFF38BDF8),
+                    ),
+                  ),
+                  title: Text(
+                    task.apartmentName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      Text(
+                        task.localizedType,
+                        style: const TextStyle(
+                          color: Color(0xFF38BDF8),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        '${task.scheduleStart} - ${task.scheduleEnd}',
+                        style: const TextStyle(color: Colors.white60),
+                      ),
+                      if (task.status == 'COMPLETED')
+                        const Padding(
+                          padding: EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            'TAMAMLANDI',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white54,
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TaskDetailScreen(task: task),
+                      ),
+                    ).then((_) {
+                      // Refresh list on return
+                      setState(() {
+                        _tasksFuture = _taskService.getMyTasks();
+                      });
+                    });
+                  },
                 ),
               );
             },

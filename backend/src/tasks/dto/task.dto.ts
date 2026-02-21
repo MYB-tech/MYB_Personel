@@ -19,10 +19,6 @@ export class CreateTaskDto {
     @IsNotEmpty()
     type: string; // 'garbage' | 'cleaning' | etc.
 
-    @IsString()
-    @IsOptional()
-    definition_id?: string;
-
     @IsArray()
     @IsString({ each: true })
     scheduled_days: string[]; // ['MON', 'WED', 'FRI']

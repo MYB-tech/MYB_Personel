@@ -12,7 +12,6 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { MessageTemplatesModule } from './message-templates/message-templates.module';
-import { TaskDefinitionsModule } from './task-definitions/task-definitions.module';
 
 @Module({
   imports: [
@@ -58,7 +57,6 @@ import { TaskDefinitionsModule } from './task-definitions/task-definitions.modul
     AnnouncementsModule,
     DashboardModule,
     MessageTemplatesModule,
-    TaskDefinitionsModule,
   ],
 })
 export class AppModule { }

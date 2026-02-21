@@ -11,7 +11,6 @@ import {
 import { Staff } from './staff.entity';
 import { Apartment } from './apartment.entity';
 import { TaskLog } from './task-log.entity';
-import { TaskDefinition } from './task-definition.entity';
 
 export enum TaskStatus {
     PENDING = 'PENDING',
@@ -42,13 +41,6 @@ export class Task {
 
     @Column({ length: 50 })
     type: string; // 'garbage', 'cleaning', vb.
-
-    @Column({ type: 'uuid', nullable: true })
-    definition_id: string | null;
-
-    @ManyToOne(() => TaskDefinition, (td) => td.tasks, { onDelete: 'SET NULL', nullable: true })
-    @JoinColumn({ name: 'definition_id' })
-    definition: TaskDefinition | null;
 
     @Column({ type: 'text', array: true, default: '{}' })
     scheduled_days: string[]; // ['MON', 'WED', 'FRI']
