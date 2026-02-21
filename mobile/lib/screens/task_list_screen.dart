@@ -32,23 +32,83 @@ class _TaskListScreenState extends State<TaskListScreen> {
     }
   }
 
+  void _deleteAccount() async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Hesabı Sil'),
+            content: const Text(
+              'Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('İPTAL'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('SİL', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+    );
+
+    if (confirm == true) {
+      // In a real app, you would call an API to delete the account
+      // For now, we just clear local data and logout
+      _logout();
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'Bugünkü Görevler',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFF1E4E76),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: _logout,
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            onSelected: (value) {
+              if (value == 'logout') {
+                _logout();
+              } else if (value == 'delete_account') {
+                _deleteAccount();
+              }
+            },
+            itemBuilder:
+                (context) => [
+                  const PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout, color: Colors.white70),
+                        SizedBox(width: 8),
+                        Text('Çıkış Yap'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete_account',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_forever, color: Colors.redAccent),
+                        SizedBox(width: 8),
+                        Text('Hesabı Sil', style: TextStyle(color: Colors.redAccent)),
+                      ],
+                    ),
+                  ),
+                ],
           ),
         ],
       ),
-      body: FutureBuilder<List<Task>>(
+      body: SafeArea(
+        child: FutureBuilder<List<Task>>(
         future: _tasksFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -61,10 +121,21 @@ class _TaskListScreenState extends State<TaskListScreen> {
               ),
             );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-              child: Text(
-                'Bugün için görev bulunamadı.',
-                style: TextStyle(color: Colors.white70),
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.assignment_turned_in_outlined,
+                    size: 80,
+                    color: Colors.white.withOpacity(0.2),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Bugün için görev bulunamadı.',
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
+                ],
               ),
             );
           }
@@ -83,6 +154,17 @@ class _TaskListScreenState extends State<TaskListScreen> {
                 ),
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(16),
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E4E76).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      task.icon,
+                      color: const Color(0xFF38BDF8),
+                    ),
+                  ),
                   title: Text(
                     task.apartmentName,
                     style: const TextStyle(
@@ -96,10 +178,11 @@ class _TaskListScreenState extends State<TaskListScreen> {
                     children: [
                       const SizedBox(height: 8),
                       Text(
-                        task.type,
+                        task.localizedType,
                         style: const TextStyle(
-                          color: Colors.blueAccent,
-                          fontSize: 16,
+                          color: Color(0xFF38BDF8),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -143,6 +226,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
           );
         },
       ),
-    );
+    ),);
   }
 }

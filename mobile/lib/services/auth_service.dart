@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/constants.dart';
 
 class AuthService {
-  // Use 10.0.2.2 for Android emulator to access host localhost
-  static const String baseUrl = 'http://10.0.2.2:3000';
+  final String baseUrl = AppConstants.baseUrl;
 
   Future<Map<String, dynamic>> login(String phone, String password) async {
     try {

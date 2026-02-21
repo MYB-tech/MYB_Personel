@@ -20,6 +20,13 @@ class _LoginScreenState extends State<LoginScreen> {
   String _errorMessage = '';
 
   Future<void> _handleLogin() async {
+    if (_phoneController.text.isEmpty || _passwordController.text.isEmpty) {
+      setState(() {
+        _errorMessage = 'Lütfen tüm alanları doldurun.';
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = '';
@@ -27,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await _authService.login(
-        _phoneController.text,
+        _phoneController.text.trim(),
         _passwordController.text,
       );
 
@@ -56,10 +63,11 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0F1E2E), // Dark background
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -136,6 +144,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    );
+    ),);
   }
 }
