@@ -11,8 +11,6 @@ export interface Task {
     apartment_id: string;
     apartment?: Apartment;
     type: string;
-    definition_id?: string;
-    definition?: any;
     scheduled_days: string[];
     schedule_start: string;
     schedule_end: string;
@@ -24,7 +22,6 @@ export interface CreateTaskDto {
     staff_id: string;
     apartment_id: string;
     type: string;
-    definition_id?: string;
     scheduled_days: string[];
     schedule_start: string;
     schedule_end: string;
