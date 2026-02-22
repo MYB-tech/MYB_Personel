@@ -5,12 +5,14 @@ import { Staff } from '../entities/staff.entity';
 import { Apartment } from '../entities/apartment.entity';
 import { Task } from '../entities/task.entity';
 import { TaskLog } from '../entities/task-log.entity';
+import { TaskExecution } from '../entities/task-execution.entity';
 
 describe('DashboardService', () => {
     let service: DashboardService;
     let staffRepo: any;
     let apartmentRepo: any;
     let taskRepo: any;
+    let executionRepo: any;
     let logRepo: any;
 
     beforeEach(async () => {
@@ -34,9 +36,17 @@ describe('DashboardService', () => {
                     useValue: {
                         createQueryBuilder: jest.fn().mockReturnValue({
                             where: jest.fn().mockReturnThis(),
+                            andWhere: jest.fn().mockReturnThis(),
                             orWhere: jest.fn().mockReturnThis(),
                             getCount: jest.fn().mockResolvedValue(3),
                         }),
+                    },
+                },
+                {
+                    provide: getRepositoryToken(TaskExecution),
+                    useValue: {
+                        count: jest.fn().mockResolvedValue(0),
+                        find: jest.fn().mockResolvedValue([]),
                     },
                 },
                 {
@@ -52,6 +62,7 @@ describe('DashboardService', () => {
         staffRepo = module.get(getRepositoryToken(Staff));
         apartmentRepo = module.get(getRepositoryToken(Apartment));
         taskRepo = module.get(getRepositoryToken(Task));
+        executionRepo = module.get(getRepositoryToken(TaskExecution));
         logRepo = module.get(getRepositoryToken(TaskLog));
     });
 

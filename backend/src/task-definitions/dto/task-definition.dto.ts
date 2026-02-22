@@ -6,8 +6,8 @@ export class CreateTaskDefinitionDto {
     name: string;
 
     @IsString()
-    @IsNotEmpty()
-    code: string;
+    @IsOptional()
+    code?: string;
 
     @IsString()
     @IsOptional()

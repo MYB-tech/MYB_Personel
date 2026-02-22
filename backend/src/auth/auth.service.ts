@@ -14,9 +14,15 @@ export class AuthService {
     ) { }
 
     async login(phone: string, password: string) {
-        const user = await this.staffRepo.findOne({ where: { phone } });
+        const normalizedPhone = this.normalizePhone(phone);
+        const user = await this.staffRepo.findOne({ where: { phone: normalizedPhone } });
+
         if (!user) {
             throw new UnauthorizedException('Geçersiz telefon numarası veya şifre');
+        }
+
+        if (!user.is_active) {
+            throw new UnauthorizedException('Hesabınız aktif değil. Lütfen yönetici ile iletişime geçin.');
         }
 
         const isMatch = await bcrypt.compare(password, user.password_hash);
@@ -34,6 +40,14 @@ export class AuthService {
                 role: user.role,
             },
         };
+    }
+
+    private normalizePhone(phone: string): string {
+        let cleaned = phone.replace(/\D/g, '');
+        if (cleaned.startsWith('0')) {
+            cleaned = cleaned.substring(1);
+        }
+        return cleaned;
     }
 
     async validateUser(userId: string): Promise<Staff | null> {

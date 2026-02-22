@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleMap, Marker, Autocomplete, useJsApiLoader } from '@react-google-maps/api';
 import { Input } from './input';
 
@@ -31,6 +31,12 @@ export function LocationPicker({ latitude, longitude, address, onLocationSelect,
         lat: latitude || 41.0082,
         lng: longitude || 28.9784
     };
+
+    useEffect(() => {
+        if (mapRef.current && latitude && longitude) {
+            mapRef.current.panTo({ lat: latitude, lng: longitude });
+        }
+    }, [latitude, longitude]);
 
     const onLoad = useCallback((map: google.maps.Map) => {
         mapRef.current = map;
