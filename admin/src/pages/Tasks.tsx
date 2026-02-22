@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { tasksService } from '../services/tasksService';
 import type { Task, CreateTaskDto, TaskStatus } from '../services/tasksService';
 import { staffService } from '../services/staffService';
+import { taskDefinitionService } from '../services/taskDefinitionService';
+import type { TaskDefinition } from '../services/taskDefinitionService';
 import type { Staff } from '../services/staffService';
 import { apartmentsService } from '../services/apartmentsService';
 import type { Apartment } from '../services/apartmentsService';
@@ -25,6 +27,7 @@ export default function TasksPage() {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [staffList, setStaffList] = useState<Staff[]>([]);
     const [apartments, setApartments] = useState<Apartment[]>([]);
+    const [definitions, setDefinitions] = useState<TaskDefinition[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Modal & Form State
@@ -32,7 +35,7 @@ export default function TasksPage() {
     const [formData, setFormData] = useState<CreateTaskDto>({
         staff_id: '',
         apartment_id: '',
-        type: 'Çöp Toplama',
+        type: '',
         scheduled_days: [],
         schedule_start: '19:00',
         schedule_end: '20:00',
@@ -46,14 +49,19 @@ export default function TasksPage() {
 
     const loadData = async () => {
         try {
-            const [tData, sData, aData] = await Promise.all([
+            const [tData, sData, aData, dData] = await Promise.all([
                 tasksService.getAll(),
                 staffService.getAll(),
-                apartmentsService.getAll()
+                apartmentsService.getAll(),
+                taskDefinitionService.getAll()
             ]);
             setTasks(tData);
             setStaffList(sData);
             setApartments(aData);
+            setDefinitions(dData);
+            if (dData.length > 0) {
+                setFormData(prev => ({ ...prev, type: dData[0].code }));
+            }
         } catch (error) {
             console.error('Error loading data:', error);
         } finally {
@@ -112,7 +120,7 @@ export default function TasksPage() {
     };
 
     const getStatusBadge = (status: TaskStatus, isLate: boolean) => {
-        if (isLate && status !== 'PENDING') {
+        if (isLate && status !== 'PENDING' && status !== 'COMPLETED_LATE') {
             return <span className="px-2 py-1 rounded-full text-xs font-bold bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">Gecikmeli</span>;
         }
         switch (status) {
@@ -122,6 +130,8 @@ export default function TasksPage() {
                 return <span className="px-2 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">Başladı</span>;
             case 'COMPLETED':
                 return <span className="px-2 py-1 rounded-full text-xs font-bold bg-green-500/10 text-green-500 border border-green-500/20">Tamamlandı</span>;
+            case 'COMPLETED_LATE':
+                return <span className="px-2 py-1 rounded-full text-xs font-bold bg-orange-500/10 text-orange-500 border border-orange-500/20">Geç Tamamlandı</span>;
             case 'LATE':
                 return <span className="px-2 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-500 border border-red-500/20">Gecikti</span>;
             case 'OUT_OF_RANGE':
@@ -261,11 +271,12 @@ export default function TasksPage() {
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             value={formData.type}
                             onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                            required
                         >
-                            <option value="Çöp Toplama">Çöp Toplama</option>
-                            <option value="Temizlik">Temizlik</option>
-                            <option value="Bahçe Bakımı">Bahçe Bakımı</option>
-                            <option value="Güvenlik Kontrolü">Güvenlik Kontrolü</option>
+                            <option value="">Seçiniz...</option>
+                            {definitions.map(d => (
+                                <option key={d.id} value={d.code}>{d.name}</option>
+                            ))}
                         </select>
                     </div>
 

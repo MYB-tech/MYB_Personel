@@ -27,7 +27,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   void _logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    await prefs.remove('access_token');
     if (mounted) {
       Navigator.of(
         context,

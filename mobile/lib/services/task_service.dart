@@ -47,4 +47,21 @@ class TaskService {
       throw Exception(error['message'] ?? 'Failed to start task');
     }
   }
+
+  Future<void> completeTask(String taskId, double lat, double lng) async {
+    final token = await _getToken();
+    final response = await http.post(
+      Uri.parse('$baseUrl/tasks/$taskId/complete'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'latitude': lat, 'longitude': lng}),
+    );
+
+    if (response.statusCode != 201) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['message'] ?? 'Failed to complete task');
+    }
+  }
 }

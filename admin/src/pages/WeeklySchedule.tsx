@@ -9,6 +9,7 @@ interface ScheduleTask {
     apartment: string;
     time: string;
     status: string;
+    distance_meters?: number;
 }
 
 interface ScheduleDay {
@@ -34,7 +35,8 @@ const dayTranslations: Record<string, string> = {
 
 const taskTypeTranslations: Record<string, string> = {
     'garbage': 'Çöp Toplama',
-    'cleaning': 'Temizlik'
+    'cleaning': 'Temizlik',
+    'security': 'Güvenlik Turu'
 };
 
 export default function WeeklySchedule() {
@@ -122,12 +124,29 @@ export default function WeeklySchedule() {
                                                                 <Clock className="h-3 w-3" />
                                                                 {task.time}
                                                             </div>
+                                                            {task.distance_meters !== undefined && task.distance_meters !== null && (
+                                                                <div className={cn(
+                                                                    "text-[10px] font-medium",
+                                                                    task.distance_meters > 30 ? "text-red-500" : "text-blue-500"
+                                                                )}>
+                                                                    Mesafe: {Math.round(task.distance_meters)}m
+                                                                    {task.distance_meters > 30 && " (Menzil Dışı)"}
+                                                                </div>
+                                                            )}
                                                             <div className="mt-1">
                                                                 <span className={cn(
                                                                     "px-1.5 py-0.5 rounded-full text-[10px]",
-                                                                    task.status === 'PENDING' ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
+                                                                    task.status === 'PENDING' ? "bg-blue-100 text-blue-700" :
+                                                                        task.status === 'COMPLETED' ? "bg-green-100 text-green-700" :
+                                                                            task.status === 'COMPLETED_LATE' ? "bg-orange-100 text-orange-700" :
+                                                                                task.status === 'IN_PROGRESS' || task.status === 'LATE' ? "bg-blue-100 text-blue-700 font-bold" :
+                                                                                    "bg-gray-100 text-gray-700"
                                                                 )}>
-                                                                    {task.status === 'PENDING' ? 'Bekliyor' : 'Tamamlandı'}
+                                                                    {task.status === 'PENDING' ? 'Bekliyor' :
+                                                                        task.status === 'COMPLETED' ? 'Tamamlandı' :
+                                                                            task.status === 'COMPLETED_LATE' ? 'Geç Tamamlandı' :
+                                                                                task.status === 'IN_PROGRESS' || task.status === 'LATE' ? 'Devam Ediyor' :
+                                                                                    task.status}
                                                                 </span>
                                                             </div>
                                                         </div>

@@ -10,6 +10,7 @@ import { Repository, Not, In } from 'typeorm';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
 import { Task, TaskStatus } from '../entities/task.entity';
+import { TaskExecution } from '../entities/task-execution.entity';
 import { TaskLog } from '../entities/task-log.entity';
 import { GeofencingService } from '../geofencing/geofencing.service';
 import { TaskDefinitionsService } from '../task-definitions/task-definitions.service';
@@ -22,6 +23,8 @@ export class TasksService {
     constructor(
         @InjectRepository(Task)
         private readonly taskRepo: Repository<Task>,
+        @InjectRepository(TaskExecution)
+        private readonly taskExecutionRepo: Repository<TaskExecution>,
         @InjectRepository(TaskLog)
         private readonly logRepo: Repository<TaskLog>,
         private readonly geofencingService: GeofencingService,
@@ -39,12 +42,36 @@ export class TasksService {
         });
     }
 
-    async findByStaff(staffId: string): Promise<Task[]> {
-        return this.taskRepo.find({
+    async findByStaff(staffId: string): Promise<any[]> {
+        const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+        const today = dayNames[new Date().getDay()];
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        const tasks = await this.taskRepo.find({
             where: { staff_id: staffId },
             relations: ['apartment'],
             order: { schedule_start: 'ASC' },
         });
+
+        const todayTasks = tasks.filter((t) => t.scheduled_days.includes(today));
+
+        const results = [];
+        for (const task of todayTasks) {
+            const execution = await this.taskExecutionRepo.findOne({
+                where: { task_id: task.id, date: todayStr },
+            });
+
+            results.push({
+                ...task,
+                status: execution?.status || TaskStatus.PENDING,
+                is_late: execution?.is_late || false,
+                started_at: execution?.started_at || null,
+                completed_at: execution?.completed_at || null,
+                execution_id: execution?.id || null,
+            });
+        }
+
+        return results;
     }
 
     async findOne(id: string): Promise<Task> {
@@ -91,17 +118,20 @@ export class TasksService {
     async startTask(taskId: string, staffId: string, dto: StartTaskDto) {
         const task = await this.findOne(taskId);
 
-        // Yetki kontrolü
         if (task.staff_id !== staffId) {
             throw new ForbiddenException('Bu görevi başlatma yetkiniz yok');
         }
 
-        // Durum kontrolü
-        if (task.status !== TaskStatus.PENDING) {
-            throw new ConflictException('Bu görev zaten başlatılmış veya tamamlanmış');
+        const todayStr = new Date().toISOString().split('T')[0];
+        let execution = await this.taskExecutionRepo.findOne({
+            where: { task_id: taskId, date: todayStr },
+        });
+
+        if (execution && execution.status !== TaskStatus.PENDING) {
+            throw new ConflictException('Bu görev bugün için zaten başlatılmış veya tamamlanmış');
         }
 
-        // Geofencing doğrulaması (≤ 20m)
+        // Geofencing doğrulaması
         const distanceCheck = await this.geofencingService.verifyProximity(
             task.apartment_id,
             dto.longitude,
@@ -113,11 +143,18 @@ export class TasksService {
         const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
         const isLate = currentTime > task.schedule_end;
 
-        // Görevi güncelle
-        task.status = isLate ? TaskStatus.LATE : TaskStatus.IN_PROGRESS;
-        task.is_late = isLate;
-        task.started_at = now;
-        await this.taskRepo.save(task);
+        if (!execution) {
+            execution = this.taskExecutionRepo.create({
+                task_id: taskId,
+                date: todayStr,
+            });
+        }
+
+        execution.status = isLate ? TaskStatus.LATE : TaskStatus.IN_PROGRESS;
+        execution.is_late = isLate;
+        execution.started_at = now;
+        execution.distance_meters = distanceCheck.distance_meters;
+        await this.taskExecutionRepo.save(execution);
 
         // Log kaydı
         const log = this.logRepo.create({
@@ -153,7 +190,7 @@ export class TasksService {
             message: isLate
                 ? 'Görev gecikmeli olarak başlatıldı. Daire sakinlerine WhatsApp bildirimi gönderiliyor.'
                 : 'Görev başarıyla başlatıldı. Daire sakinlerine WhatsApp bildirimi gönderiliyor.',
-            task,
+            task: { ...task, ...execution },
             distance_meters: distanceCheck.distance_meters,
             is_late: isLate,
         };
@@ -168,16 +205,27 @@ export class TasksService {
             throw new ForbiddenException('Bu görevi tamamlama yetkiniz yok');
         }
 
+        const todayStr = new Date().toISOString().split('T')[0];
+        const execution = await this.taskExecutionRepo.findOne({
+            where: { task_id: taskId, date: todayStr },
+        });
+
         if (
-            task.status !== TaskStatus.IN_PROGRESS &&
-            task.status !== TaskStatus.LATE
+            !execution ||
+            (execution.status !== TaskStatus.IN_PROGRESS &&
+                execution.status !== TaskStatus.LATE)
         ) {
-            throw new ConflictException('Bu görev henüz başlatılmamış');
+            throw new ConflictException('Bu görev bugün için henüz başlatılmamış');
         }
 
-        task.status = task.is_late ? TaskStatus.LATE : TaskStatus.COMPLETED;
-        task.completed_at = new Date();
-        await this.taskRepo.save(task);
+        // Gecikme kontrolü (bitiş zamanı için)
+        const now = new Date();
+        const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        const isCompletedLate = currentTime > task.schedule_end;
+
+        execution.status = isCompletedLate ? TaskStatus.COMPLETED_LATE : TaskStatus.COMPLETED;
+        execution.completed_at = now;
+        await this.taskExecutionRepo.save(execution);
 
         // Log kaydı
         const log = this.logRepo.create({
@@ -195,7 +243,7 @@ export class TasksService {
 
         return {
             message: 'Görev tamamlandı',
-            task,
+            task: { ...task, ...execution },
         };
     }
 
