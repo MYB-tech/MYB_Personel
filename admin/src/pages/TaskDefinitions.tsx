@@ -19,6 +19,7 @@ export default function TaskDefinitionsPage() {
         name: '',
         code: '',
         icon: 'task_alt',
+        message: '',
         message_template_id: '' as string | number
     });
     const [formLoading, setFormLoading] = useState(false);
@@ -44,7 +45,7 @@ export default function TaskDefinitionsPage() {
 
     const handleCreate = () => {
         setSelectedDef(null);
-        setFormData({ name: '', code: '', icon: 'task_alt', message_template_id: '' });
+        setFormData({ name: '', code: '', icon: 'task_alt', message: '', message_template_id: '' });
         setIsModalOpen(true);
     };
 
@@ -54,6 +55,7 @@ export default function TaskDefinitionsPage() {
             name: def.name,
             code: def.code,
             icon: def.icon,
+            message: def.message || '',
             message_template_id: def.message_template_id || ''
         });
         setIsModalOpen(true);
@@ -215,7 +217,20 @@ export default function TaskDefinitionsPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">WhatsApp Mesaj Şablonu</label>
+                        <label className="text-sm font-medium">Özel Bildirim Mesajı (Opsiyonel)</label>
+                        <textarea
+                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            value={formData.message}
+                            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                            placeholder="Örn: Merhaba <ad>, <gorev_turu> görevi <baslangic_saati> itibariyle başladı."
+                        />
+                        <p className="text-[10px] text-muted-foreground">
+                            Kullanılabilir: &lt;ad&gt;, &lt;soyad&gt;, &lt;daire_no&gt;, &lt;gorev_turu&gt;, &lt;personel_adi&gt;, &lt;baslangic_saati&gt;
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Veya WhatsApp Mesaj Şablonu (Meta API)</label>
                         <select
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             value={formData.message_template_id}

@@ -56,6 +56,11 @@ export class WhatsappProcessor {
             }
         });
 
+        // Görev tanımını çek (mesaj için)
+        const taskDefinition = await this.residentRepo.manager
+            .getRepository('task_definitions')
+            .findOne({ where: { code: taskType } });
+
         // Mesaj şablonunu belirle
         let template: MessageTemplate | null = null;
         if (messageTemplateId) {
@@ -73,6 +78,13 @@ export class WhatsappProcessor {
                 const formattedPhone = this.formatPhoneNumber(resident.phone);
                 if (template) {
                     await this.sendPersonalizedMessage({ ...resident, phone: formattedPhone }, template, {
+                        taskType: taskTypeTranslated,
+                        staffName: staffName || 'Personel',
+                        startTime: startTime
+                    });
+                } else if (taskDefinition?.message) {
+                    // Görev tanımındaki direkt mesajı kullan
+                    await this.sendPersonalizedDirectMessage({ ...resident, phone: formattedPhone }, taskDefinition.message, {
                         taskType: taskTypeTranslated,
                         staffName: staffName || 'Personel',
                         startTime: startTime
@@ -120,6 +132,26 @@ export class WhatsappProcessor {
             'security': 'Güvenlik Turu',
         };
         return translations[type.toLowerCase()] || type;
+    }
+
+    private async sendPersonalizedDirectMessage(resident: Resident, message: string, data: any) {
+        const replacements: Record<string, string> = {
+            '<ad>': resident.first_name || '',
+            '<soyad>': resident.last_name || '',
+            '<daire_no>': resident.unit_number || '',
+            '<gorev_turu>': data.taskType,
+            '<personel_adi>': data.staffName,
+            '<baslangic_saati>': data.startTime,
+        };
+
+        let personalizedMessage = message;
+        for (const [placeholder, value] of Object.entries(replacements)) {
+            personalizedMessage = personalizedMessage.replace(
+                new RegExp(placeholder, 'gi'),
+                value,
+            );
+        }
+        return this.metaApi.sendTextMessage(resident.phone, personalizedMessage);
     }
 
     private async sendPersonalizedMessage(resident: Resident, template: MessageTemplate, data: any) {

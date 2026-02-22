@@ -16,6 +16,10 @@ export class CreateTaskDefinitionDto {
     @IsNumber()
     @IsOptional()
     message_template_id?: number;
+
+    @IsString()
+    @IsOptional()
+    message?: string;
 }
 
 export class UpdateTaskDefinitionDto {
@@ -34,4 +38,8 @@ export class UpdateTaskDefinitionDto {
     @IsNumber()
     @IsOptional()
     message_template_id?: number;
+
+    @IsString()
+    @IsOptional()
+    message?: string;
 }

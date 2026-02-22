@@ -6,6 +6,7 @@ export interface TaskDefinition {
     name: string;
     code: string;
     icon: string;
+    message?: string;
     message_template_id?: number;
     message_template?: MessageTemplate;
     created_at?: string;

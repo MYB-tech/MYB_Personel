@@ -26,6 +26,9 @@ export class TaskDefinition {
     @Column({ nullable: true })
     message_template_id: number;
 
+    @Column({ type: 'text', nullable: true })
+    message: string;
+
     @ManyToOne(() => MessageTemplate, { onDelete: 'SET NULL', nullable: true })
     @JoinColumn({ name: 'message_template_id' })
     message_template: MessageTemplate;
