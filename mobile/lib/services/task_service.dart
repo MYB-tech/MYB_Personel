@@ -17,9 +17,7 @@ class TaskService {
     if (token == null) throw Exception('Token not found');
 
     final response = await http.get(
-      Uri.parse(
-        '$baseUrl/tasks/my',
-      ),
+      Uri.parse('$baseUrl/tasks/my'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
@@ -31,7 +29,11 @@ class TaskService {
     }
   }
 
-  Future<void> startTask(String taskId, double lat, double lng) async {
+  Future<Map<String, dynamic>> startTask(
+    String taskId,
+    double lat,
+    double lng,
+  ) async {
     final token = await _getToken();
     final response = await http.post(
       Uri.parse('$baseUrl/tasks/$taskId/start'),
@@ -42,13 +44,19 @@ class TaskService {
       body: jsonEncode({'latitude': lat, 'longitude': lng}),
     );
 
-    if (response.statusCode != 201) {
+    if (response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
       final error = jsonDecode(response.body);
       throw Exception(error['message'] ?? 'Failed to start task');
     }
   }
 
-  Future<void> completeTask(String taskId, double lat, double lng) async {
+  Future<Map<String, dynamic>> completeTask(
+    String taskId,
+    double lat,
+    double lng,
+  ) async {
     final token = await _getToken();
     final response = await http.post(
       Uri.parse('$baseUrl/tasks/$taskId/complete'),
@@ -59,7 +67,9 @@ class TaskService {
       body: jsonEncode({'latitude': lat, 'longitude': lng}),
     );
 
-    if (response.statusCode != 201) {
+    if (response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
       final error = jsonDecode(response.body);
       throw Exception(error['message'] ?? 'Failed to complete task');
     }
