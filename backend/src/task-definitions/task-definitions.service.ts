@@ -35,11 +35,36 @@ export class TaskDefinitionsService {
     }
 
     async create(dto: CreateTaskDefinitionDto): Promise<TaskDefinition> {
+        if (!dto.code) {
+            dto.code = this.slugify(dto.name);
+        }
+
         const existing = await this.repo.findOne({ where: { code: dto.code } });
-        if (existing) throw new ConflictException('Bu kod ile zaten bir görev tanımı var');
+        if (existing) {
+            // Eğer kod çakışıyorsa sonuna timestamp ekle
+            dto.code = `${dto.code}-${Date.now().toString().slice(-4)}`;
+        }
 
         const def = this.repo.create(dto);
         return this.repo.save(def);
+    }
+
+    private slugify(text: string): string {
+        const trMap: any = {
+            'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
+            'Ç': 'C', 'Ğ': 'G', 'İ': 'I', 'Ö': 'O', 'Ş': 'S', 'Ü': 'U'
+        };
+        let slug = text;
+        for (const key in trMap) {
+            slug = slug.replace(new RegExp(key, 'g'), trMap[key]);
+        }
+        return slug
+            .toString()
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, '-')
+            .replace(/[^\w\-]+/g, '')
+            .replace(/\-\-+/g, '-');
     }
 
     async update(id: string, dto: UpdateTaskDefinitionDto): Promise<TaskDefinition> {

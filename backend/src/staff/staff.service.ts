@@ -31,8 +31,9 @@ export class StaffService {
     }
 
     async create(dto: CreateStaffDto): Promise<Staff> {
+        const normalizedPhone = this.normalizePhone(dto.phone);
         const existing = await this.staffRepo.findOne({
-            where: { phone: dto.phone },
+            where: { phone: normalizedPhone },
         });
         if (existing) {
             throw new ConflictException('Bu telefon numarası zaten kayıtlı');
@@ -41,7 +42,7 @@ export class StaffService {
         const hash = await bcrypt.hash(dto.password, 10);
         const staff = this.staffRepo.create({
             name: dto.name,
-            phone: dto.phone,
+            phone: normalizedPhone,
             password_hash: hash,
             role: dto.role || 'field',
         });
@@ -52,7 +53,7 @@ export class StaffService {
         const staff = await this.findOne(id);
 
         if (dto.name) staff.name = dto.name;
-        if (dto.phone) staff.phone = dto.phone;
+        if (dto.phone) staff.phone = this.normalizePhone(dto.phone);
         if (dto.is_active !== undefined) staff.is_active = dto.is_active;
         if (dto.role) staff.role = dto.role;
         if (dto.password) {
@@ -60,6 +61,14 @@ export class StaffService {
         }
 
         return this.staffRepo.save(staff);
+    }
+
+    private normalizePhone(phone: string): string {
+        let cleaned = phone.replace(/\D/g, '');
+        if (cleaned.startsWith('0')) {
+            cleaned = cleaned.substring(1);
+        }
+        return cleaned;
     }
 
     async remove(id: string): Promise<void> {

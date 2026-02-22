@@ -194,25 +194,6 @@ export default function TaskDefinitionsPage() {
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Kod (Benzersiz)</label>
-                        <Input
-                            value={formData.code}
-                            onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                            placeholder="Örn: garbage"
-                            required
-                            disabled={!!selectedDef}
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">İkon (Material/Lucide Adı)</label>
-                        <Input
-                            value={formData.icon}
-                            onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                            placeholder="Örn: delete_outline"
-                        />
-                    </div>
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium">WhatsApp Mesaj Şablonu</label>
