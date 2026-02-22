@@ -9,6 +9,7 @@ import ApartmentsPage from './pages/Apartments';
 import TasksPage from './pages/Tasks';
 import WeeklySchedulePage from './pages/WeeklySchedule';
 import AnnouncementsPage from './pages/Announcements';
+import TaskDefinitionsPage from './pages/TaskDefinitions';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             <Route path="/staff" element={<StaffPage />} />
             <Route path="/apartments" element={<ApartmentsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/task-definitions" element={<TaskDefinitionsPage />} />
             <Route path="/schedule" element={<WeeklySchedulePage />} />
             <Route path="/announcements" element={<AnnouncementsPage />} />
           </Route>

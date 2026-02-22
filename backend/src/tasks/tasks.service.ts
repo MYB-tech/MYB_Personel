@@ -12,6 +12,7 @@ import type { Queue } from 'bull';
 import { Task, TaskStatus } from '../entities/task.entity';
 import { TaskLog } from '../entities/task-log.entity';
 import { GeofencingService } from '../geofencing/geofencing.service';
+import { TaskDefinitionsService } from '../task-definitions/task-definitions.service';
 import { CreateTaskDto, StartTaskDto, CompleteTaskDto } from './dto/task.dto';
 
 @Injectable()
@@ -24,6 +25,7 @@ export class TasksService {
         @InjectRepository(TaskLog)
         private readonly logRepo: Repository<TaskLog>,
         private readonly geofencingService: GeofencingService,
+        private readonly taskDefinitionsService: TaskDefinitionsService,
         @InjectQueue('whatsapp')
         private readonly whatsappQueue: Queue,
     ) { }
@@ -132,12 +134,15 @@ export class TasksService {
 
         // WhatsApp bildirim kuyruğuna ekle
         try {
+            const taskDefinition = await this.taskDefinitionsService.findByCode(task.type);
+
             await this.whatsappQueue.add('task-started', {
                 taskId: task.id,
                 apartmentId: task.apartment_id,
                 taskType: task.type,
                 staffName: task.staff?.name,
                 startedAt: now.toISOString(),
+                messageTemplateId: taskDefinition?.message_template_id,
             });
             this.logger.log(`WhatsApp bildirim kuyruğa eklendi: görev ${taskId}`);
         } catch (err) {
@@ -146,8 +151,8 @@ export class TasksService {
 
         return {
             message: isLate
-                ? 'Görev gecikmeli olarak başlatıldı'
-                : 'Görev başarıyla başlatıldı',
+                ? 'Görev gecikmeli olarak başlatıldı. Daire sakinlerine WhatsApp bildirimi gönderiliyor.'
+                : 'Görev başarıyla başlatıldı. Daire sakinlerine WhatsApp bildirimi gönderiliyor.',
             task,
             distance_meters: distanceCheck.distance_meters,
             is_late: isLate,
