@@ -5,6 +5,7 @@ import {
     ManyToOne,
     JoinColumn,
     CreateDateColumn,
+    Index,
 } from 'typeorm';
 import { Apartment } from './apartment.entity';
 
@@ -37,6 +38,7 @@ export class Resident {
     @Column({ length: 20 })
     phone: string; // WhatsApp numarası
 
+    @Index()
     @ManyToOne(() => Apartment, (a) => a.residents, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'apartment_id' })
     apartment: Apartment;

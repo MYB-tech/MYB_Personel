@@ -70,36 +70,36 @@ export class ApartmentsService {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json<any>(sheet);
 
-        // Mevcut sakinleri temizle (isteğe bağlı, ama üzerine yazma mantığı için uygun)
-        await this.residentRepo.delete({ apartment_id: id });
+        // Mevcut sakinleri çek (güncelleme/eşleme için)
+        const existingResidents = await this.residentRepo.find({ where: { apartment_id: id } });
 
         const residentsToSave = [];
 
         for (const row of rows) {
             const unitNo = (row['Daire No'] || row['daire no'] || row['Daire'])?.toString();
             const ownerName = row['Mal Sahibi'] || row['mal sahibi'];
-            const ownerPhone = row['Mal Sahibi Tel'] || row['mal sahibi tel'];
+            const ownerPhone = row['Mal Sahibi Tel'] || row['mal sahibi tel']?.toString().replace(/\D/g, '');
             const tenantName = row['Kiracı'] || row['kiracı'];
-            const tenantPhone = row['Kiracı Tel'] || row['kiracı tel'];
+            const tenantPhone = row['Kiracı Tel'] || row['kiracı tel']?.toString().replace(/\D/g, '');
 
             if (ownerName && ownerPhone) {
-                residentsToSave.push(this.residentRepo.create({
-                    first_name: ownerName.toString(),
-                    phone: ownerPhone.toString().replace(/\D/g, ''),
-                    unit_number: unitNo,
-                    type: ResidentType.OWNER,
-                    apartment_id: id
-                }));
+                let resident = existingResidents.find(r => r.unit_number === unitNo && r.type === ResidentType.OWNER);
+                if (!resident) {
+                    resident = this.residentRepo.create({ apartment_id: id, unit_number: unitNo, type: ResidentType.OWNER });
+                }
+                resident.first_name = ownerName.toString();
+                resident.phone = ownerPhone;
+                residentsToSave.push(resident);
             }
 
             if (tenantName && tenantPhone) {
-                residentsToSave.push(this.residentRepo.create({
-                    first_name: tenantName.toString(),
-                    phone: tenantPhone.toString().replace(/\D/g, ''),
-                    unit_number: unitNo,
-                    type: ResidentType.TENANT,
-                    apartment_id: id
-                }));
+                let resident = existingResidents.find(r => r.unit_number === unitNo && r.type === ResidentType.TENANT);
+                if (!resident) {
+                    resident = this.residentRepo.create({ apartment_id: id, unit_number: unitNo, type: ResidentType.TENANT });
+                }
+                resident.first_name = tenantName.toString();
+                resident.phone = tenantPhone;
+                residentsToSave.push(resident);
             }
         }
 

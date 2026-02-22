@@ -2,7 +2,7 @@ import api from './api';
 import type { Staff } from './staffService';
 import type { Apartment } from './apartmentsService';
 
-export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'LATE' | 'OUT_OF_RANGE';
+export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'COMPLETED_LATE' | 'LATE' | 'OUT_OF_RANGE';
 
 export interface Task {
     id: string;

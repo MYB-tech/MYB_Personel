@@ -5,11 +5,12 @@ import { DashboardController } from './dashboard.controller';
 import { Staff } from '../entities/staff.entity';
 import { Apartment } from '../entities/apartment.entity';
 import { Task } from '../entities/task.entity';
+import { TaskExecution } from '../entities/task-execution.entity';
 import { TaskLog } from '../entities/task-log.entity';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Staff, Apartment, Task, TaskLog]),
+        TypeOrmModule.forFeature([Staff, Apartment, Task, TaskExecution, TaskLog]),
     ],
     controllers: [DashboardController],
     providers: [DashboardService],

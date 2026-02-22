@@ -65,18 +65,21 @@ export class WhatsappProcessor {
         const taskTypeTranslated = this.translateTaskType(taskType);
         const startTime = new Date(startedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
-        const results = await Promise.allSettled(
-            targetResidents.map((resident) => {
+        let sent = 0;
+        let failed = 0;
+
+        for (const resident of targetResidents) {
+            try {
+                const formattedPhone = this.formatPhoneNumber(resident.phone);
                 if (template) {
-                    return this.sendPersonalizedMessage(resident, template, {
+                    await this.sendPersonalizedMessage({ ...resident, phone: formattedPhone }, template, {
                         taskType: taskTypeTranslated,
                         staffName: staffName || 'Personel',
                         startTime: startTime
                     });
                 } else {
-                    // Varsayılan şablon (Fallback)
-                    return this.metaApi.sendTemplateMessage(
-                        resident.phone,
+                    await this.metaApi.sendTemplateMessage(
+                        formattedPhone,
                         'task_started_notification',
                         'tr',
                         [
@@ -86,15 +89,28 @@ export class WhatsappProcessor {
                         ],
                     );
                 }
-            }),
-        );
-
-        const sent = results.filter((r) => r.status === 'fulfilled').length;
-        const failed = results.filter((r) => r.status === 'rejected').length;
+                sent++;
+                // Küçük bir gecikme ekleyerek Meta API limitlerini koru
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (err) {
+                this.logger.error(`Mesaj gönderilemedi (${resident.phone}): ${err.message}`);
+                failed++;
+            }
+        }
 
         this.logger.log(
             `WhatsApp bildirimi tamamlandı: ${sent} başarılı, ${failed} başarısız`,
         );
+    }
+
+    private formatPhoneNumber(phone: string): string {
+        let cleaned = phone.replace(/\D/g, '');
+        if (cleaned.startsWith('0')) {
+            cleaned = '90' + cleaned.substring(1);
+        } else if (cleaned.length === 10) {
+            cleaned = '90' + cleaned;
+        }
+        return cleaned;
     }
 
     private translateTaskType(type: string): string {
@@ -147,6 +163,7 @@ export class WhatsappProcessor {
         const { phone, recipientData, messageTemplate, isMeta, metaTemplateName, metaLanguage } = job.data;
 
         try {
+            const formattedPhone = this.formatPhoneNumber(phone);
             const replacements = {
                 '<ad>': recipientData.Ad || '',
                 '<soyad>': recipientData.Soyad || '',
@@ -168,7 +185,7 @@ export class WhatsappProcessor {
                 });
 
                 await this.metaApi.sendTemplateMessage(
-                    phone,
+                    formattedPhone,
                     metaTemplateName,
                     metaLanguage || 'tr',
                     parameters
@@ -182,10 +199,10 @@ export class WhatsappProcessor {
                         value,
                     );
                 }
-                await this.metaApi.sendTextMessage(phone, personalizedMessage);
+                await this.metaApi.sendTextMessage(formattedPhone, personalizedMessage);
             }
 
-            this.logger.log(`Duyuru mesajı gönderildi: ${phone}`);
+            this.logger.log(`Duyuru mesajı gönderildi: ${formattedPhone}`);
         } catch (error) {
             this.logger.error(`Duyuru mesajı gönderilemedi: ${phone}`);
             throw error;

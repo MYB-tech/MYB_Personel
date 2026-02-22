@@ -4,6 +4,7 @@ import {
     Column,
     ManyToOne,
     JoinColumn,
+    Index,
     CreateDateColumn,
     UpdateDateColumn,
     OneToMany,
@@ -16,6 +17,7 @@ export enum TaskStatus {
     PENDING = 'PENDING',
     IN_PROGRESS = 'IN_PROGRESS',
     COMPLETED = 'COMPLETED',
+    COMPLETED_LATE = 'COMPLETED_LATE',
     LATE = 'LATE',
     OUT_OF_RANGE = 'OUT_OF_RANGE',
 }
@@ -25,6 +27,7 @@ export class Task {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
+    @Index()
     @ManyToOne(() => Staff, (s) => s.tasks, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'staff_id' })
     staff: Staff;
@@ -32,6 +35,7 @@ export class Task {
     @Column({ type: 'uuid' })
     staff_id: string;
 
+    @Index()
     @ManyToOne(() => Apartment, (a) => a.tasks, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'apartment_id' })
     apartment: Apartment;

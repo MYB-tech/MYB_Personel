@@ -81,6 +81,39 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   }
 
 
+  Future<void> _handleCompleteTask() async {
+    setState(() {
+      _isLoading = true;
+      _statusMessage = null;
+    });
+
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.bestForNavigation,
+      );
+
+      await HapticFeedback.heavyImpact();
+
+      await _taskService.completeTask(
+        widget.task.id,
+        position.latitude,
+        position.longitude,
+      );
+
+      setState(() {
+        _statusMessage = 'Görev Tamamlandı!';
+        _isSuccess = true;
+      });
+    } catch (e) {
+      setState(() {
+        _statusMessage = e.toString().replaceAll('Exception: ', '');
+        _isSuccess = false;
+      });
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -191,30 +224,37 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 ),
               ),
 
-            if (widget.task.status == 'PENDING' || widget.task.status == 'LATE')
+            if ((widget.task.status == 'PENDING' ||
+                    widget.task.status == 'LATE') &&
+                !_isSuccess)
               CustomButton(
                 text: 'GÖREVİ BAŞLAT',
                 onPressed: _handleStartTask,
                 isLoading: _isLoading,
                 color: const Color(0xFF10B981), // Green
               )
-            else if (widget.task.status == 'IN_PROGRESS')
-              const Center(
-                child: Text(
-                  'GÖREV DEVAM EDİYOR',
-                  style: TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                ),
+            else if (widget.task.status == 'IN_PROGRESS' && !_isSuccess)
+              CustomButton(
+                text: 'GÖREVİ TAMAMLA',
+                onPressed: _handleCompleteTask,
+                isLoading: _isLoading,
+                color: const Color(0xFF3B82F6), // Blue
               )
             else
-              const Center(
+              Center(
                 child: Text(
-                  'GÖREV TAMAMLANDI',
+                  _isSuccess ||
+                          widget.task.status == 'COMPLETED' ||
+                          widget.task.status == 'COMPLETED_LATE'
+                      ? 'GÖREV TAMAMLANDI'
+                      : 'GÖREV DEVAM EDİYOR',
                   style: TextStyle(
-                    color: Colors.white38,
+                    color:
+                        _isSuccess ||
+                                widget.task.status == 'COMPLETED' ||
+                                widget.task.status == 'COMPLETED_LATE'
+                            ? Colors.green
+                            : Colors.blue,
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                   ),

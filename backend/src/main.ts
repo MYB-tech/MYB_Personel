@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { TaskDefinitionsService } from './task-definitions/task-definitions.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -23,6 +24,10 @@ async function bootstrap() {
 
   // API prefix
   app.setGlobalPrefix('api');
+
+  // Seed task definitions
+  const taskDefinitionsService = app.get(TaskDefinitionsService);
+  await taskDefinitionsService.seed();
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
