@@ -34,4 +34,8 @@ export class UpdateStaffDto {
     @IsBoolean()
     @IsOptional()
     is_active?: boolean;
+
+    @IsString()
+    @IsOptional()
+    role?: string;
 }

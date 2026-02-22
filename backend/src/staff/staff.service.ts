@@ -54,6 +54,7 @@ export class StaffService {
         if (dto.name) staff.name = dto.name;
         if (dto.phone) staff.phone = dto.phone;
         if (dto.is_active !== undefined) staff.is_active = dto.is_active;
+        if (dto.role) staff.role = dto.role;
         if (dto.password) {
             staff.password_hash = await bcrypt.hash(dto.password, 10);
         }

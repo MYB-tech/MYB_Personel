@@ -6,12 +6,14 @@ import { TaskLog } from '../entities/task-log.entity';
 import { TasksService } from './tasks.service';
 import { TasksController } from './tasks.controller';
 import { GeofencingModule } from '../geofencing/geofencing.module';
+import { TaskDefinitionsModule } from '../task-definitions/task-definitions.module';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([Task, TaskLog]),
         BullModule.registerQueue({ name: 'whatsapp' }),
         GeofencingModule,
+        TaskDefinitionsModule,
     ],
     controllers: [TasksController],
     providers: [TasksService],
